@@ -1,0 +1,36 @@
+@Library('jenkins-shared-libraries@feature-cicd') _
+def cdpipeline = new opstree.cd.templates.ssh_pm2.ssh_pm2_deployment()
+
+node('HRC-Kollect-Jenkins-Agent') {
+    cdpipeline.call([
+        enable_jenkins_build_param_override: true,
+
+        // WORKSPACE MANAGEMENT
+        clean_workspace      : true,
+
+        // VCS MANAGEMENT
+        repo_https_url       : 'https://gitlab.healthreconconnect.com/hrc/kollect-client-billing-service.git',
+        repo_branch          : params.BRANCH ?: 'main',
+        repo_url_type        : 'http',
+        jenkins_git_creds_id : 'hasantha-hrc-gitlab-access',
+        source_code_path     : '',
+
+        // DEPLOYMENT CONFIG
+        server_ip            : '10.2.40.133',
+        deploy_dir           : '/opt/hrc-kollect-dev/client-billing-backend',
+        app_name             : 'hrc-kollect-client-billing-backend-dev',
+        node_version         : 'v24.6.0',
+        ssh_credentials_id   : 'HRC-Kollect-Dev-Server',
+        pem_key_path         : '/opt/dev-keys/hrc-kollect-dev.pem',
+        secret_arn           : 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.hrckollect.com-tDjPIP',
+        package_manager      : 'npm',
+        build_app_on_server  : true,
+        start_command        : 'npm run start',
+
+        // NOTIFICATION
+        notification_enabled                    : true,
+        notification_channel                    : 'gmail',
+        gmail_notification_from_email_id        : 'smtp@kernernorland.com',
+        gmail_notification_recipients_email_ids : 'asangai@healthreconconnect.com'
+    ])
+}

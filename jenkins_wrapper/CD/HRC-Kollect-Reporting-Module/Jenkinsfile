@@ -1,0 +1,28 @@
+@Library('jenkins-shared-libraries@feature-cicd') _
+def cdpipeline = new opstree.cd.templates.docker_ecr.docker_deployment()
+
+node('HRC-Kollect-Jenkins-Agent') {
+    cdpipeline.call([
+        enable_jenkins_build_param_override: true,
+
+        // WORKSPACE MANAGEMENT
+        clean_workspace      : true,
+
+        // DOCKER CONTAINER DEPLOYMENT (SSH -> Remote Server)
+        server_ip            : '10.2.40.133',
+        ssh_credentials_id   : 'HRC-Kollect-Dev-Server',
+        pem_key_path         : '/opt/dev-keys/hrc-kollect-dev.pem',
+        app_name             : 'kollect-reporting-module-dev',
+        ecr_repo             : 'kollect-reporting-module-dev',
+        ecr_account          : '167121004129',
+        ecr_region           : 'us-east-1',
+        container_port       : '8080',
+        host_port            : '8080',
+
+        // NOTIFICATION
+        notification_enabled                    : true,
+        notification_channel                    : 'gmail',
+        gmail_notification_from_email_id        : 'smtp@kernernorland.com',
+        gmail_notification_recipients_email_ids : 'asangai@healthreconconnect.com'
+    ])
+}

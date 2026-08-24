@@ -1,0 +1,418 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  font-family: 'Inter', Arial, sans-serif;
+  color: #334155;
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+
+/* ─── Header ─────────────────────────────────────────────── */
+.header {
+  background: #ffffff;
+  padding: 30px 40px;
+  font-size: 32px;
+  font-weight: 800;
+  color: #0f172a;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  margin-bottom: 40px;
+  letter-spacing: -0.02em;
+}
+
+/* ─── Summary Bar ─────────────────────────────────────────── */
+.summary {
+  text-align: center;
+  padding: 0 40px;
+  margin-bottom: 40px;
+}
+
+.summary-item {
+  display: inline-block;
+  margin: 10px;
+  vertical-align: top;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  min-width: 160px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.02);
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.summary-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05);
+}
+
+.summary-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #ef4444;
+  opacity: 0.8;
+}
+
+.summary-item .label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.summary-item .value {
+  font-size: 32px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+}
+
+.summary-item .value.safe { color: #10b981; }
+.summary-item .value.warn { color: #f59e0b; }
+.summary-item .value.danger { color: #ef4444; }
+
+/* ─── Scan info box ───────────────────────────────────────── */
+.scan-info {
+  margin: 0 auto 30px;
+  max-width: 1000px;
+  padding: 16px 24px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 13px;
+  color: #64748b;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px 32px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+}
+
+.scan-info span b {
+  color: #334155;
+  font-weight: 600;
+}
+
+/* ─── Section headings ────────────────────────────────────── */
+.section-title {
+  max-width: 1200px;
+  margin: 0 auto;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  padding: 30px 20px 16px;
+}
+
+/* ─── Target Box / Containers ─────────────────────────────── */
+.target-box, .dep-card, .file-card {
+  max-width: 1200px;
+  margin: 0 auto 24px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.03);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.target-box:hover, .dep-card:hover, .file-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.06);
+}
+
+.target-header, .dep-card-header, .file-header {
+  background: #f8fafc;
+  padding: 16px 24px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.target-name, .dep-name, .file-name {
+  color: #3b82f6;
+  font-family: 'Courier New', monospace;
+  font-size: 15px;
+}
+
+/* ─── Tables ──────────────────────────────────────────────── */
+.table-container, table {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto 30px;
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e2e8f0;
+  border-collapse: collapse;
+}
+
+/* If table is inside a card, don't double margin/shadow */
+.target-box table, .dep-card table, .file-card table {
+  margin: 0;
+  box-shadow: none;
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0;
+}
+
+th {
+  background: #f8fafc;
+  color: #475569;
+  padding: 14px 20px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+  vertical-align: top;
+  line-height: 1.6;
+  color: #334155;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+tr:hover td {
+  background: #f8fafc;
+}
+
+.pkg-name, .filepath, .hash-val, code {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.version-info {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.version-installed { color: #64748b; }
+.version-fixed { color: #10b981; font-weight: 600; }
+
+/* ─── Severity Badges ─────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+  min-width: 84px;
+}
+
+.badge-critical { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+.badge-high     { background: #ffedd5; color: #c2410c; border: 1px solid #fdba74; }
+.badge-medium   { background: #fef3c7; color: #b45309; border: 1px solid #fcd34d; }
+.badge-low      { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+.badge-info     { background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; }
+.badge-none, .badge-unknown { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+
+/* ─── CVE links / Tags ────────────────────────────────────── */
+.cve-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cve-tag {
+  display: inline-block;
+  background: #f1f5f9;
+  color: #3b82f6;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: 'Courier New', monospace;
+  text-decoration: none;
+  font-weight: 700;
+  border: 1px solid #cbd5e1;
+  transition: all 0.2s;
+}
+
+.cve-tag:hover {
+  background: #3b82f6;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+
+.vuln-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+
+/* ─── Details / Summary (Collapsibles) ────────────────────── */
+details summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3b82f6;
+  padding: 12px 20px;
+  background: #f8fafc;
+  user-select: none;
+}
+details summary:hover {
+  background: #f1f5f9;
+}
+details table {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+details table th {
+  background: #ffffff;
+}
+
+/* ─── Grid layouts (for OWASP/Gitleaks) ───────────────────── */
+.dep-card-body, .file-body {
+  padding: 20px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.info-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.info-value {
+  font-size: 14px;
+  color: #0f172a;
+  font-weight: 500;
+}
+
+.filepath-sm {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: #3b82f6;
+  word-break: break-all;
+}
+
+.hash-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.hash-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.hash-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.hash-val {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #334155;
+  word-break: break-all;
+}
+
+/* ─── No-vuln banner ──────────────────────────────────────── */
+.no-vuln {
+  max-width: 1000px;
+  margin: 20px auto;
+  padding: 24px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  color: #15803d;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+}
+
+/* ─── Leak snippet ────────────────────────────────────────── */
+.snippet-box {
+  background: #f8fafc;
+  color: #0f172a;
+  padding: 16px;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-x: auto;
+  margin-top: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.snippet-box mark {
+  background: #fca5a5;
+  color: #7f1d1d;
+  padding: 0 4px;
+  border-radius: 3px;
+}
+
+/* ─── Footer ──────────────────────────────────────────────── */
+.footer {
+  text-align: center;
+  padding: 24px;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 40px;
+  font-weight: 500;
+}

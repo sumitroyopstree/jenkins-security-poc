@@ -1,0 +1,60 @@
+@Library('jenkins-shared-libraries@feature-cicd') _
+def cipipeline = new opstree.ci.templates.nodejs_ci.nodejs_ci()
+
+node('HRC-Kollect-Jenkins-Agent') {
+    cipipeline.call([
+        enable_jenkins_build_param_override: true,
+
+        // WORKSPACE MANAGEMENT
+        clean_workspace                  : true,
+
+        // VCS MANAGEMENT
+        repo_https_url                   : 'https://gitlab.healthreconconnect.com/hrc/one-kollect-scheduler.git',
+        repo_ssh_url                     : 'git@gitlab.healthreconconnect.com:hrc/one-kollect-scheduler.git',
+        repo_branch                      : params.BRANCH ?: 'main',
+        repo_url_type                    : 'http',
+        jenkins_git_creds_id             : 'hasantha-hrc-gitlab-access',
+        source_code_path                 : '',
+
+        // PRE-BUILD CHECKS
+        gitleaks_check                   : true,
+        fail_job_if_leak_detected        : false,
+        gitleaks_scan_mode               : 'full',
+        gitleaks_report_jenkins_publish  : true,
+
+        // DEPENDENCY SCANNING (OWASP)
+        dependency_check                          : 'false',
+        dependency_scan_tool                      : 'owasp',
+        owasp_project_name                        : 'non-healthcare-cron',
+        owasp_report_publish                      : 'true',
+        owasp_report_format                       : 'html',
+        fail_job_if_dependency_returned_exception : 'false',
+        nvd_api_key_creds_id                      : 'NVD_API_KEY',
+
+        // UNIT TESTING
+        unit_testing_check               : 'false',
+        fail_job_if_unit_issue_detected  : 'false',
+        unit_test_reports_path           : '**/junit*.xml',
+
+        // STATIC CODE ANALYSIS (SONARQUBE)
+        static_code_analysis_check              : false,
+        codebase_to_scan_directory              : '.',
+        sonar_project_key                       : 'non-healthcare-cron',
+        sonar_project_name                      : 'non-healthcare-cron',
+        sonar_sources                           : '.',
+        sonar_host_url                          : 'http://10.2.1.209:9000',
+        fail_job_if_analysis_returned_exception : 'false',
+        jenkins_sonarqube_token_creds_id        : 'HRC_SONARQUBE_TOKEN',
+
+        // TRIGGER CD PIPELINE
+        enable_trigger_cd_pipeline       : params.TRIGGER_CD != null ? params.TRIGGER_CD : true,
+        trigger_cd_pipeline_path         : 'Non-Healthcare/CD/Non-Healthcare-Cron',
+        image_tag_build_param            : 'image_tag',
+
+        // NOTIFICATION
+        notification_enabled                    : true,
+        notification_channel                    : 'gmail',
+        gmail_notification_from_email_id        : 'smtp@kernernorland.com',
+        gmail_notification_recipients_email_ids : 'asangai@healthreconconnect.com'
+    ])
+}
