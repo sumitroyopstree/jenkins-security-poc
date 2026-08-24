@@ -124,7 +124,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         // CODE BUILD CONFIGURATION
         perform_code_build                      : true,
         build_tool                              : 'maven',
-        java_version                            : '11',
+        java_version                            : '11   ',
         pom_location                            : '',
         codeartifact_dependency                 : 'false', // Set 'true' if pulling dependencies from AWS CodeArtifact
 
