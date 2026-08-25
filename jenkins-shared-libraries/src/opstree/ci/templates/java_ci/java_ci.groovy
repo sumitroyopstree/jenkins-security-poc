@@ -213,8 +213,61 @@ def call(Map step_params) {
                         echo 'Skipping Build Docker Image stage as it is disabled.'
                 }
 
+                // stage('Post-Build Checks') {
+                //         def tasks = [:]
+
+                //         // Conditionally add ImageScanning task
+                //         if (get_params_value(enableOverride, step_params, 'image_scanning_check') != null && get_params_value(enableOverride, step_params, 'image_scanning_check').toBoolean()) {
+                //     tasks['ImageScanning'] = {
+                //                 trivy.image_scanning_factory(
+                //                         image_scanning_check: "${get_params_value(enableOverride, step_params, 'image_scanning_check')}",
+                //                         image_name: "${get_params_value(enableOverride, step_params, 'image_name')}",
+                //                         image_tag: "${get_params_value(enableOverride, step_params, 'image_tag')}",
+                //                         scan_severity: "${get_params_value(enableOverride, step_params, 'scan_severity')}",
+                //                         image_scanning_report_publish: "${get_params_value(enableOverride, step_params, 'image_scanning_report_publish')}"
+                //                 )
+                //     }
+                //         }
+
+                //         if (get_params_value(enableOverride, step_params, 'dockle_scan_check') != null && get_params_value(enableOverride, step_params, 'dockle_scan_check').toBoolean()) {
+                //     tasks['DockleHardeningScan'] = {
+                //                 dockle.dockle(
+                //                         image_scanning_check: "${get_params_value(enableOverride, step_params, 'dockle_scan_check')}",
+                //                         image_name: "${get_params_value(enableOverride, step_params, 'image_name')}",
+                //                         image_tag: "${get_params_value(enableOverride, step_params, 'image_tag')}",
+                //                         image_scanning_report_publish: "${get_params_value(enableOverride, step_params, 'dockle_report_publish')}"
+                //                 )
+                //     }
+                //         }
+
+                //         // Conditionally add ImageSizeValidator task
+                //         if (get_params_value(enableOverride, step_params, 'image_size_validator_check') != null && get_params_value(enableOverride, step_params, 'image_size_validator_check').toBoolean()) {
+                //     tasks['ImageSizeValidator'] = {
+                //                 image_size_validator.size_validator_factory(
+                //                         image_size_validator_check: "${get_params_value(enableOverride, step_params, 'image_size_validator_check')}",
+                //                         image_name: "${get_params_value(enableOverride, step_params, 'image_name')}",
+                //                         image_tag: "${get_params_value(enableOverride, step_params, 'image_tag')}",
+                //                         max_allowed_image_size: "${get_params_value(enableOverride, step_params, 'max_allowed_image_size')}",
+                //                         fail_job_if_validation_fail: "${get_params_value(enableOverride, step_params, 'fail_job_if_validation_fail')}"
+                //                 )
+                //     }
+                //         }
+
+                //         // Only run the parallel block if there are tasks
+                //         if (tasks) {
+                //     parallel tasks
+                //         } else {
+                //     echo 'No image scanning or validation tasks are enabled, skipping this stage.'
+                //         }
+                // }
                 stage('Post-Build Checks') {
                         def tasks = [:]
+                        def parser = new parser()
+                        def repo_dir = parser.fetch_git_repo_name('repo_url': "${repo_url}")
+                        def docker_image_tag = sh(
+                            script: "git config --global --add safe.directory ${WORKSPACE}/${repo_dir} && cd ${WORKSPACE}/${repo_dir} && git rev-parse --short HEAD",
+                            returnStdout: true
+                        ).trim()
 
                         // Conditionally add ImageScanning task
                         if (get_params_value(enableOverride, step_params, 'image_scanning_check') != null && get_params_value(enableOverride, step_params, 'image_scanning_check').toBoolean()) {
@@ -222,7 +275,7 @@ def call(Map step_params) {
                                 trivy.image_scanning_factory(
                                         image_scanning_check: "${get_params_value(enableOverride, step_params, 'image_scanning_check')}",
                                         image_name: "${get_params_value(enableOverride, step_params, 'image_name')}",
-                                        image_tag: "${get_params_value(enableOverride, step_params, 'image_tag')}",
+                                        image_tag: docker_image_tag,
                                         scan_severity: "${get_params_value(enableOverride, step_params, 'scan_severity')}",
                                         image_scanning_report_publish: "${get_params_value(enableOverride, step_params, 'image_scanning_report_publish')}"
                                 )
@@ -234,7 +287,7 @@ def call(Map step_params) {
                                 dockle.dockle(
                                         image_scanning_check: "${get_params_value(enableOverride, step_params, 'dockle_scan_check')}",
                                         image_name: "${get_params_value(enableOverride, step_params, 'image_name')}",
-                                        image_tag: "${get_params_value(enableOverride, step_params, 'image_tag')}",
+                                        image_tag: docker_image_tag,
                                         image_scanning_report_publish: "${get_params_value(enableOverride, step_params, 'dockle_report_publish')}"
                                 )
                     }
@@ -246,7 +299,7 @@ def call(Map step_params) {
                                 image_size_validator.size_validator_factory(
                                         image_size_validator_check: "${get_params_value(enableOverride, step_params, 'image_size_validator_check')}",
                                         image_name: "${get_params_value(enableOverride, step_params, 'image_name')}",
-                                        image_tag: "${get_params_value(enableOverride, step_params, 'image_tag')}",
+                                        image_tag: docker_image_tag,
                                         max_allowed_image_size: "${get_params_value(enableOverride, step_params, 'max_allowed_image_size')}",
                                         fail_job_if_validation_fail: "${get_params_value(enableOverride, step_params, 'fail_job_if_validation_fail')}"
                                 )
