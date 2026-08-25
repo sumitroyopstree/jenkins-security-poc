@@ -119,7 +119,6 @@ import opstree.common.*
 
 def image_scanning_factory(Map step_params) {
     def logger = new logger()
-    // Accept both boolean true and string 'true'
     if ("${step_params.image_scanning_check}" == 'true') {
         trivy(step_params)
     } else {
@@ -135,20 +134,11 @@ def trivy(Map step_params) {
 
     def image_scanning_report_publish = "${step_params.image_scanning_report_publish}"
     def fail_job_if_scan_failed       = "${step_params.fail_job_if_scan_failed ?: 'false'}"
-    def trivyCacheDir                 = "${WORKSPACE}@tmp/trivy-cache"
+    def trivyCacheDir                 = "/tmp/trivy-cache"
 
     dir("${WORKSPACE}") {
         sh "mkdir -p ${WORKSPACE}/trivy ${trivyCacheDir}"
         sh "chmod -R 777 ${WORKSPACE}/trivy ${trivyCacheDir} 2>/dev/null || true"
-
-        // -- Java DB strategy -------------------------------------------------
-        // trivy-java-db is 892 MiB downloaded from ghcr.io which fails on
-        // this network with OCI errors at post-download initialization.
-        // Fix: ALWAYS skip Java DB - Alpine OS CVEs are detected via the
-        // main vuln DB which downloads reliably. Java JAR CVEs can be
-        // re-enabled later once the ghcr.io connectivity is stable.
-        def skipJavaDbFlag = '--skip-java-db-update'
-        logger.logger('msg':'Trivy: --skip-java-db-update applied (avoids 892 MiB OCI download failure). Alpine OS CVEs still detected.', 'level':'INFO')
 
         try {
             def imageExists = sh(
@@ -163,10 +153,7 @@ def trivy(Map step_params) {
 
             logger.logger('msg':'Image found, proceeding with Trivy scan', 'level':'INFO')
 
-            // -- Write render templates via libraryResource --------------------
-            // libraryResource() is the only reliable way to load shared library
-            // files onto the agent workspace - cp fails because @libs/ path is
-            // only present on the Jenkins master, not the build agent workspace.
+            // Write render templates via libraryResource
             dir("${WORKSPACE}/trivy") {
                 writeFile file: 'report.html', text: libraryResource('trivy/render/report.html')
                 writeFile file: 'report.css',  text: libraryResource('trivy/render/report.css')
@@ -174,25 +161,25 @@ def trivy(Map step_params) {
                 sh 'chmod +x inject.sh'
             }
 
-            // -- Step 1: Run Trivy scan - JSON output -------------------------
-            // Separated from inject.sh so a scan failure is caught cleanly
-            // by the outer try-catch without also swallowing render errors.
+            // Step 1: Run Trivy scan - OS vulnerabilities (runs with agent UID to prevent root-owned cache lockouts)
             sh """
                 docker run --rm \\
+                    --user \$(id -u):\$(id -g) \\
                     -v /var/run/docker.sock:/var/run/docker.sock \\
                     -v ${WORKSPACE}/trivy:/output \\
-                    -v ${trivyCacheDir}:/root/.cache/trivy \\
+                    -v ${trivyCacheDir}:/tmp/cache \\
                     aquasec/trivy:0.56.0 image \\
+                        --cache-dir /tmp/cache \\
                         --scanners vuln \\
-                        --severity "${step_params.scan_severity}" \\
-                        ${skipJavaDbFlag} \\
+                        --pkg-types os \\
+                        --severity "${step_params.scan_severity ?: 'HIGH,CRITICAL'}" \\
                         --format json \\
                         --output /output/trivy_report.json \\
                         ${step_params.image_name}:${step_params.image_tag}
             """
             logger.logger('msg':'Trivy scan completed successfully', 'level':'INFO')
 
-            // -- Step 2: Generate human-readable HTML report -------------------
+            // Step 2: Generate human-readable HTML report
             try {
                 dir("${WORKSPACE}/trivy") {
                     sh './inject.sh'
@@ -202,7 +189,7 @@ def trivy(Map step_params) {
                 logger.logger('msg':"Trivy HTML render failed (raw JSON will be published instead): ${renderEx.message}", 'level':'WARN')
             }
 
-            // -- Step 3: Publish report ----------------------------------------
+            // Step 3: Publish report
             if (image_scanning_report_publish == 'true') {
                 def htmlExists = fileExists("${WORKSPACE}/trivy/trivy_report.html")
                 def reportFile = htmlExists ? 'trivy_report.html' : 'trivy_report.json'
@@ -223,6 +210,9 @@ def trivy(Map step_params) {
             } else {
                 logger.logger('msg':'Trivy scan failed - continuing as fail_job_if_scan_failed=false', 'level':'WARN')
             }
+        } finally {
+            // Restore workspace permissions so deleteDir() in finally block succeeds cleanly
+            sh "sudo chown -R \$(id -u):\$(id -g) ${WORKSPACE} ${trivyCacheDir} 2>/dev/null || true"
         }
     }
 }
