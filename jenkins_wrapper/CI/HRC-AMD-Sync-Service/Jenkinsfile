@@ -142,6 +142,16 @@ node('HRC-Kollect-Jenkins-Agent') {
         ecr_region                       : 'us-east-1',
         account_id                       : '167121004129',
 
+        // POST-BUILD CHECKS (TRIVY & SIZE VALIDATOR)
+        image_scanning_check                    : true,
+        scan_severity                           : 'HIGH,CRITICAL',
+        image_scanning_report_publish           : 'true',
+        fail_job_if_scan_failed                 : 'false',
+
+        image_size_validator_check              : true,
+        max_allowed_image_size                  : '500', // max size in MB
+        fail_job_if_validation_fail             : 'false',
+
         // TRIGGER CD PIPELINE
         enable_trigger_cd_pipeline       : params.TRIGGER_CD != null ? params.TRIGGER_CD : true,
         trigger_cd_pipeline_path         : 'CD/HRC-AMD-Sync-Service',
