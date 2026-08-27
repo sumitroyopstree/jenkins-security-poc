@@ -1,3 +1,8 @@
+// Common SCM Configuration
+def cicdRepo        = 'https://gitlab.healthreconconnect.com/K1-infra/cicd.git'
+def cicdCredentials = 'piyushu-gitlab-token'
+def cicdBranch      = 'feature-cicd'
+
 // Common Parameters for HRC CI Jobs (5 Environments)
 def hrcCommonParameters = [
     [
@@ -45,65 +50,38 @@ def nonHealthcareCommonParameters = [
 // HRC Project CI Jobs Map
 def hrcCiJobs = [
     'HRC-Kollect-BE': [
-        url          : 'https://gitlab.healthreconconnect.com/hrc/devops.git',
-        credentials  : 'hasantha-hrc-gitlab-access',
-        branch       : 'main',
         scriptPath   : 'jenkins_wrapper/CI/HRC-Kollect-BE/Jenkinsfile',
         parameters   : hrcCommonParameters
     ],
     'HRC-Kollect-FE': [
-        url          : 'https://gitlab.healthreconconnect.com/hrc/devops.git',
-        credentials  : 'hasantha-hrc-gitlab-access',
-        branch       : 'main',
         scriptPath   : 'jenkins_wrapper/CI/HRC-Kollect-FE/Jenkinsfile',
         parameters   : hrcCommonParameters
     ],
     'HRC-Kollect-Cron': [
-        url          : 'https://gitlab.healthreconconnect.com/hrc/devops.git',
-        credentials  : 'hasantha-hrc-gitlab-access',
-        branch       : 'main',
         scriptPath   : 'jenkins_wrapper/CI/HRC-Kollect-Cron/Jenkinsfile',
         parameters   : hrcCommonParameters
     ],
     'HRC-Kollect-Client-Billing-FE': [
-        url          : 'https://gitlab.healthreconconnect.com/hrc/devops.git',
-        credentials  : 'hasantha-hrc-gitlab-access',
-        branch       : 'main',
         scriptPath   : 'jenkins_wrapper/CI/HRC-Kollect-Client-Billing-FE/Jenkinsfile',
         parameters   : hrcCommonParameters
     ],
     'HRC-Kollect-Client-Billing-BE': [
-        url          : 'https://gitlab.healthreconconnect.com/hrc/devops.git',
-        credentials  : 'hasantha-hrc-gitlab-access',
-        branch       : 'main',
         scriptPath   : 'jenkins_wrapper/CI/HRC-Kollect-Client-Billing-BE/Jenkinsfile',
         parameters   : hrcCommonParameters
     ],
     'HRC-Kollect-Frontdesk-BE': [
-        url          : 'https://gitlab.healthreconconnect.com/hrc/devops.git',
-        credentials  : 'hasantha-hrc-gitlab-access',
-        branch       : 'main',
         scriptPath   : 'jenkins_wrapper/CI/HRC-Kollect-Frontdesk-BE/Jenkinsfile',
         parameters   : hrcCommonParameters
     ],
     'HRC-Kollect-Pay-Portal-BE': [
-        url          : 'https://gitlab.healthreconconnect.com/hrc/devops.git',
-        credentials  : 'hasantha-hrc-gitlab-access',
-        branch       : 'main',
         scriptPath   : 'jenkins_wrapper/CI/HRC-Kollect-Pay-Portal-BE/Jenkinsfile',
         parameters   : hrcCommonParameters
     ],
     'HRC-Kollect-Reporting-Module': [
-        url          : 'https://gitlab.healthreconconnect.com/hrc/devops.git',
-        credentials  : 'hasantha-hrc-gitlab-access',
-        branch       : 'main',
         scriptPath   : 'jenkins_wrapper/CI/HRC-Kollect-Reporting-Module/Jenkinsfile',
         parameters   : hrcCommonParameters
     ],
     'HRC-AMD-Sync-Service': [
-        url          : 'https://gitlab.healthreconconnect.com/hrc/devops.git',
-        credentials  : 'hasantha-hrc-gitlab-access',
-        branch       : 'main',
         scriptPath   : 'jenkins_wrapper/CI/HRC-AMD-Sync-Service/Jenkinsfile',
         parameters   : hrcCommonParameters
     ]
@@ -112,23 +90,14 @@ def hrcCiJobs = [
 // Non-Healthcare Project CI Jobs Map (In Dedicated Folder)
 def nonHealthcareCiJobs = [
     'Non-Healthcare-BE': [
-        url          : 'https://gitlab.healthreconconnect.com/hrc/devops.git',
-        credentials  : 'hasantha-hrc-gitlab-access',
-        branch       : 'main',
         scriptPath   : 'jenkins_wrapper/Non-Healthcare/CI/Non-Healthcare-BE/Jenkinsfile',
         parameters   : nonHealthcareCommonParameters
     ],
     'Non-Healthcare-Cron': [
-        url          : 'https://gitlab.healthreconconnect.com/hrc/devops.git',
-        credentials  : 'hasantha-hrc-gitlab-access',
-        branch       : 'main',
         scriptPath   : 'jenkins_wrapper/Non-Healthcare/CI/Non-Healthcare-Cron/Jenkinsfile',
         parameters   : nonHealthcareCommonParameters
     ],
     'Non-Healthcare-FE': [
-        url          : 'https://gitlab.healthreconconnect.com/hrc/devops.git',
-        credentials  : 'hasantha-hrc-gitlab-access',
-        branch       : 'main',
         scriptPath   : 'jenkins_wrapper/Non-Healthcare/CI/Non-Healthcare-FE/Jenkinsfile',
         parameters   : nonHealthcareCommonParameters
     ]
@@ -160,10 +129,10 @@ hrcCiJobs.each { jobName, config ->
                 scm {
                     git {
                         remote {
-                            url(config.url)
-                            credentials(config.credentials)
+                            url(cicdRepo)
+                            credentials(cicdCredentials)
                         }
-                        branch(config.branch)
+                        branch(cicdBranch)
                     }
                 }
                 scriptPath(config.scriptPath)
@@ -198,10 +167,10 @@ nonHealthcareCiJobs.each { jobName, config ->
                 scm {
                     git {
                         remote {
-                            url(config.url)
-                            credentials(config.credentials)
+                            url(cicdRepo)
+                            credentials(cicdCredentials)
                         }
-                        branch(config.branch)
+                        branch(cicdBranch)
                     }
                 }
                 scriptPath(config.scriptPath)
