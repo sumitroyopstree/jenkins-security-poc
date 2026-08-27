@@ -111,7 +111,7 @@ node('HRC-Kollect-Jenkins-Agent') {
 
         // BUILD & PACKAGE ARTIFACT (NODE.JS)
         perform_code_build               : true,
-        node_version                     : '18',
+        node_version                     : '20',
         package_manager                  : 'yarn',
         app_name                         : 'hrc-kollect-be',
 
