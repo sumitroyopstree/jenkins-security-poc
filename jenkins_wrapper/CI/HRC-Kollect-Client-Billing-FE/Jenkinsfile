@@ -114,9 +114,17 @@ node('HRC-Kollect-Jenkins-Agent') {
         // BUILD & PACKAGE ARTIFACT (NODE.JS)
         perform_code_build               : true,
         node_version                     : '20',
-        package_manager                  : 'yarn',
+        package_manager                  : 'npm',
+        build_command                    : 'npm run build',
         app_name                         : 'hrc-kollect-client-billing-fe',
-
+        build_output_path                : '.next',
+        include_node_modules             : true,
+        prune_dev_dependencies           : true,
+        additional_artifact_paths : [
+                'public',
+                'next.config.ts'
+      ],
+                                
         // PUBLISH TO S3
         artifact_publish_check           : true,
         artifact_destination_type        : 'S3',
