@@ -67,7 +67,7 @@ def cipipeline = new opstree.ci.templates.nodejs_ci.nodejs_ci()
 
 node('HRC-Kollect-Jenkins-Agent') {
     cipipeline.call([
-        enable_jenkins_build_param_override: true,
+        enable_jenkins_build_param_override: false,
 
         // WORKSPACE MANAGEMENT
         clean_workspace                  : true,
