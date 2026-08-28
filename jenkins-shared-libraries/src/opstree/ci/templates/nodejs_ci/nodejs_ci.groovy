@@ -416,34 +416,65 @@ def call(Map step_params) {
             // }
 
             if (get_params_value(enableOverride, step_params, 'perform_code_build') != null && get_params_value(enableOverride, step_params, 'perform_code_build').toBoolean()) {
-                stage('Build Artifact') {
-                   build.build_factory(
-                       perform_code_build: "${get_params_value(enableOverride, step_params, 'perform_code_build')}",
-                       repo_url: "${repo_url}",
-                       repo_url_type: "${get_params_value(enableOverride, step_params, 'repo_url_type')}",
-                       source_code_path: "${get_params_value(enableOverride, step_params, 'source_code_path')}",
-                       node_version: "${get_params_value(enableOverride, step_params, 'node_version')}",
-                       package_manager: "${get_params_value(enableOverride, step_params, 'package_manager') ?: 'yarn'}",
-                       app_name: "${get_params_value(enableOverride, step_params, 'app_name') ?: 'hrc-kollect-be'}",
-                       build_secret_creds_id: "${get_params_value(enableOverride, step_params, 'build_secret_creds_id')}",
-                       build_secret_env_var: "${get_params_value(enableOverride, step_params, 'build_secret_env_var')}",
-                       build_command: "${get_params_value(enableOverride, step_params, 'build_command')}",
+                  stage('Build Artifact') {
 
-            // Added for generic artifact packaging support
-                       build_output_path: "${get_params_value(enableOverride, step_params, 'build_output_path') ?: 'dist'}",
+        // Keep all existing parameters exactly as before
+                     def nodeBuildParams = [
+                          perform_code_build: "${get_params_value(enableOverride, step_params, 'perform_code_build')}",
+                          repo_url: "${repo_url}",
+                          repo_url_type: "${get_params_value(enableOverride, step_params, 'repo_url_type')}",
+                          source_code_path: "${get_params_value(enableOverride, step_params, 'source_code_path')}",
+                          node_version: "${get_params_value(enableOverride, step_params, 'node_version')}",
+                          package_manager: "${get_params_value(enableOverride, step_params, 'package_manager') ?: 'yarn'}",
+                          app_name: "${get_params_value(enableOverride, step_params, 'app_name') ?: 'hrc-kollect-be'}",
+                          build_secret_creds_id: "${get_params_value(enableOverride, step_params, 'build_secret_creds_id')}",
+                          build_secret_env_var: "${get_params_value(enableOverride, step_params, 'build_secret_env_var')}",
+                          build_command: "${get_params_value(enableOverride, step_params, 'build_command')}"
+        ]
 
-                       include_node_modules: get_params_value(enableOverride, step_params, 'include_node_modules') != null
-                          ? get_params_value(enableOverride, step_params, 'include_node_modules')
-                          : true,
+        /*
+         * Optional generic Node.js artifact parameters.
+         *
+         * IMPORTANT:
+         * These are added ONLY when supplied by the Jenkinsfile/job.
+         *
+         * This keeps older pipelines backward compatible because
+         * node_build.groovy continues using its existing defaults.
+         */
 
-                       prune_dev_dependencies: get_params_value(enableOverride, step_params, 'prune_dev_dependencies') != null
-                          ? get_params_value(enableOverride, step_params, 'prune_dev_dependencies')
-                          : true,
+        def buildOutputPath =
+            get_params_value(enableOverride, step_params, 'build_output_path')
 
-                       additional_artifact_paths: get_params_value(enableOverride, step_params, 'additional_artifact_paths') instanceof Collection
-                          ? get_params_value(enableOverride, step_params, 'additional_artifact_paths')
-                          : []
-        )
+        if (buildOutputPath != null && buildOutputPath.toString().trim()) {
+            nodeBuildParams.build_output_path = buildOutputPath
+        }
+
+
+        def includeNodeModules =
+            get_params_value(enableOverride, step_params, 'include_node_modules')
+
+        if (includeNodeModules != null) {
+            nodeBuildParams.include_node_modules = includeNodeModules
+        }
+
+
+        def pruneDevDependencies =
+            get_params_value(enableOverride, step_params, 'prune_dev_dependencies')
+
+        if (pruneDevDependencies != null) {
+            nodeBuildParams.prune_dev_dependencies = pruneDevDependencies
+        }
+
+
+        def additionalArtifactPaths =
+            get_params_value(enableOverride, step_params, 'additional_artifact_paths')
+
+        if (additionalArtifactPaths != null) {
+            nodeBuildParams.additional_artifact_paths = additionalArtifactPaths
+        }
+
+
+        build.build_factory(nodeBuildParams)
     }
 }
 
