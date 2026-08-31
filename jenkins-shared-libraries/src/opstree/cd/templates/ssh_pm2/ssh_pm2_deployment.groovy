@@ -257,6 +257,7 @@
 // }
 
 
+
 package opstree.cd.templates.ssh_pm2
 
 import opstree.common.*
@@ -302,7 +303,7 @@ def call(Map step_params) {
         def secret_region         = get_params_value(enableOverride, step_params, 'secret_region') ?: 'us-east-1'
         def custom_env_content    = get_params_value(enableOverride, step_params, 'custom_env_content') ?: ''
         def run_db_migration      = get_params_value(enableOverride, step_params, 'run_db_migration') ?: false
-        def start_command         = get_params_value(enableOverride, step_params, 'start_command') ?: 'yarn start'
+        def start_command         = get_params_value(enableOverride, step_params, 'start_command') ?: 'node dist/index.js'
         def health_check_endpoint = get_params_value(enableOverride, step_params, 'health_check_endpoint') ?: 'http://127.0.0.1:80/api/health'
 
         // S3 Tarball parameters (supports both artifact_name and image_tag)
@@ -411,37 +412,63 @@ EOF
                     }
 
                     deployScript += """
-                        # 6. Start PM2 application
+                        # 6. Start PM2 application using smart binary detection
                         echo "[6/6] Launching application under PM2..."
+                        
                         if [ -f "ecosystem.config.js" ]; then
+                            echo "Found ecosystem.config.js, launching via ecosystem file..."
                             pm2 start ecosystem.config.js --name "${app_name}" --update-env
+                        elif [ -f "dist/index.js" ]; then
+                            echo "Launching Node directly: dist/index.js..."
+                            pm2 start dist/index.js --name "${app_name}" --update-env
+                        elif [ -f "dist/main.js" ]; then
+                            echo "Launching Node directly: dist/main.js..."
+                            pm2 start dist/main.js --name "${app_name}" --update-env
                         else
-                            pm2 start "${start_command}" --name "${app_name}" --update-env
+                            echo "Launching custom start command: ${start_command}..."
+                            pm2 start ${start_command} --name "${app_name}" --update-env
                         fi
+
                         pm2 save
+
+                        # Allow runtime initialization
+                        sleep 4
+
+                        # Display PM2 process table
+                        pm2 status
 
                         # 7. Post-deployment health verification
                         echo "Verifying health on ${health_check_endpoint}..."
                         HEALTHY=false
-                        for i in \$(seq 1 10); do
-                            if curl -s -f "${health_check_endpoint}" > /dev/null 2>&1; then
+                        HTTP_STATUS=""
+                        for i in \$(seq 1 15); do
+                            HTTP_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" "${health_check_endpoint}" || true)
+                            echo "Check \$i/15: Endpoint HTTP Status = \$HTTP_STATUS"
+
+                            if [ "\$HTTP_STATUS" != "000" ] && [ -n "\$HTTP_STATUS" ]; then
                                 HEALTHY=true
                                 break
                             fi
-                            echo "Waiting for backend response... (\$i/10)"
                             sleep 3
                         done
 
                         if [ "\$HEALTHY" = true ]; then
                             echo "=========================================================="
-                            echo "SUCCESS: ${app_name} is running and healthy on Port 80."
+                            echo "SUCCESS: ${app_name} is running and reachable (HTTP \$HTTP_STATUS)."
                             echo "=========================================================="
                             rm -rf dist.bak
                         else
                             echo "=========================================================="
-                            echo "[ERROR] Health check failed! Rolling back to backup..."
+                            echo "[ERROR] Health check failed! (HTTP Status: \$HTTP_STATUS)"
                             echo "=========================================================="
+                            echo "--- Recent Application Error Logs ---"
+                            pm2 logs "${app_name}" --lines 40 --nostream || true
+                            
+                            echo "--- Active Ports on Host ---"
+                            sudo ss -tulpn | grep -E 'node|pm2|80|3000|8080|9090' || true
+
                             if [ -d "dist.bak" ]; then
+                                echo "Rolling back to previous backup build..."
                                 rm -rf dist
                                 mv dist.bak dist
                                 pm2 restart "${app_name}" 2>/dev/null || true
