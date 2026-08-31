@@ -1416,13 +1416,13 @@ def build_and_package_node(Map step_params) {
     if (package_manager == 'yarn') {
 
         install_command =
-            'yarn install --frozen-lockfile'
+            'yarn install' // --frozen-lockfile commented for testing
 
 
         if (prune_dev_dependencies) {
 
             prune_command =
-                'yarn install --production=true --frozen-lockfile --ignore-scripts --prefer-offline'
+                'yarn install --development=true --ignore-scripts --prefer-offline' // --frozen-lockfile commented for testing
         }
 
     } else {

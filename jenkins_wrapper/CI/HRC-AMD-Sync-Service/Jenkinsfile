@@ -124,21 +124,17 @@ node('HRC-Kollect-Jenkins-Agent') {
         // CODE BUILD CONFIGURATION
         perform_code_build                      : true,
         build_tool                              : 'maven',
-        java_version                            : '11   ',
+        java_version                            : '17',
         pom_location                            : '',
         codeartifact_dependency                 : 'false', // Set 'true' if pulling dependencies from AWS CodeArtifact
-
-        // DOCKER BUILD & PUBLISH
-        perform_build_dockerfile                : true,
-        image_name                              : 'hrc-amd-sync-service',
 
         // DOCKER BUILD & PUBLISH
         perform_build_dockerfile         : true,
         image_name                       : 'hrc-amd-sync-service',
         artifact_publish_check           : true,
         artifact_destination_type        : 'ecr',
-        jenkins_aws_credentials_id       : 'hrc-aws-ecr-credentials',
-        ecr_repo_name                    : 'hrc-amd-sync-service',
+     // jenkins_aws_credentials_id       : 'hrc-aws-ecr-credentials',
+        ecr_repo_name                    : 'hrc-kollect-cicd/apps',
         ecr_region                       : 'us-east-1',
         account_id                       : '167121004129',
 
