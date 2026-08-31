@@ -305,10 +305,10 @@ def call(Map step_params) {
         def start_command         = get_params_value(enableOverride, step_params, 'start_command') ?: 'yarn start'
         def health_check_endpoint = get_params_value(enableOverride, step_params, 'health_check_endpoint') ?: 'http://127.0.0.1:80/api/health'
 
-        // S3 Artifact Resolution
-        def s3_bucket             = get_params_value(enableOverride, step_params, 'artifact_s3_bucket_name') ?: 'hrc-cicd-test-bucket'
-        def s3_keypath            = get_params_value(enableOverride, step_params, 'artifact_s3_keypath_destination') ?: 'backend'
-        def artifact_name         = get_params_value(enableOverride, step_params, 'artifact_name') ?: ''
+        // S3 Tarball parameters (supports both artifact_name and image_tag)
+        def s3_bucket     = get_params_value(enableOverride, step_params, 'artifact_s3_bucket_name') ?: 'hrc-cicd-test-bucket'
+        def s3_keypath    = get_params_value(enableOverride, step_params, 'artifact_s3_keypath_destination') ?: 'backend'
+        def artifact_name = get_params_value(enableOverride, step_params, 'artifact_name') ?: get_params_value(enableOverride, step_params, 'image_tag') ?: ''
 
         echo "[DEBUG] Resolved Environment : ${environment_name}"
         echo "[DEBUG] Resolved Server IP   : ${server_ip}"
