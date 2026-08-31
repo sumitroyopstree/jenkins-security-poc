@@ -104,6 +104,8 @@ def call(Map step_params) {
                                 source_code_path: "${get_params_value(enableOverride, step_params, 'source_code_path')}",
                                 mvn_settings_path: "${get_params_value(enableOverride, step_params, 'mvn_settings_path')}",
                                 codeartifact_dependency: "${get_params_value(enableOverride, step_params, 'codeartifact_dependency')}",
+                                //just added this line- artifact_jar_name: "${get_params_value(enableOverride, step_params, 'artifact_jar_name')}",
+                                artifact_jar_name: "${get_params_value(enableOverride, step_params, 'artifact_jar_name')}",
                                 codeartifact_domain:  "${get_params_value(enableOverride, step_params, 'codeartifact_domain')}",
                                 codeartifact_owner: "${get_params_value(enableOverride, step_params, 'codeartifact_owner')}",
                                 pom_location : "${get_params_value(enableOverride, step_params, 'pom_location')}",
