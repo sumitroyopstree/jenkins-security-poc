@@ -53,7 +53,7 @@ def targetEnv = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
 
 def envMap = [
     'TEST': [
-        server_ip  : '10.2.30.201',
+        server_ip  : '10.2.30.254',
         deploy_dir : '/opt/hrc-kollect-test/backend',
         app_name   : 'hrc-kollect-test-backend',
         ssh_creds  : 'HRC-Kollect-Test-Server', // Update if using a different Jenkins SSH credential ID
