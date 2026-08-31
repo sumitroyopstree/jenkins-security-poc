@@ -192,7 +192,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         artifact_publish_check           : true,
         artifact_destination_type        : 'ecr',
         docker_image_name                : 'kollect-reporting-module',
-        jenkins_aws_credentials_id       : 'HRC_AWS_CREDENTIALS',
+        jenkins_aws_credentials_id       : '',
         ecr_repo_name                    : 'hrc-kollect-cicd/apps',
         ecr_region                       : env_cfg.ecr_region,
         account_id                       : env_cfg.account_id,
