@@ -412,30 +412,37 @@ EOF
                     }
 
                     deployScript += """
-                        # 6. Start PM2 application using smart binary detection
-                        echo "[6/6] Launching application under PM2..."
-                        
+                        # 6. Start PM2 application using dynamic entrypoint detection
+                        echo "[6/6] Locating entry point and launching under PM2..."
+
+                        ENTRY_FILE=""
                         if [ -f "ecosystem.config.js" ]; then
-                            echo "Found ecosystem.config.js, launching via ecosystem file..."
+                            echo "Found ecosystem.config.js"
                             pm2 start ecosystem.config.js --name "${app_name}" --update-env
-                        elif [ -f "dist/index.js" ]; then
-                            echo "Launching Node directly: dist/index.js..."
-                            pm2 start dist/index.js --name "${app_name}" --update-env
-                        elif [ -f "dist/main.js" ]; then
-                            echo "Launching Node directly: dist/main.js..."
-                            pm2 start dist/main.js --name "${app_name}" --update-env
                         else
-                            echo "Launching custom start command: ${start_command}..."
-                            pm2 start ${start_command} --name "${app_name}" --update-env
+                            # Search for common entrypoints
+                            for candidate in "dist/main.js" "dist/src/main.js" "dist/index.js" "dist/src/index.js" "dist/server.js" "dist/app.js"; do
+                                if [ -f "\$candidate" ]; then
+                                    ENTRY_FILE="\$candidate"
+                                    break
+                                fi
+                            done
+
+                            # If not found in standard paths, locate the first top-level JS file inside dist
+                            if [ -z "\$ENTRY_FILE" ]; then
+                                ENTRY_FILE=\$(find dist -maxdepth 2 -name "*.js" | head -n 1)
+                            fi
+
+                            if [ -n "\$ENTRY_FILE" ]; then
+                                echo "Launching detected entrypoint: \$ENTRY_FILE..."
+                                pm2 start "\$ENTRY_FILE" --name "${app_name}" --update-env
+                            else
+                                echo "No dist JS file found, falling back to: ${start_command}..."
+                                pm2 start "${start_command}" --name "${app_name}" --update-env
+                            fi
                         fi
 
                         pm2 save
-
-                        # Allow runtime initialization
-                        sleep 4
-
-                        # Display PM2 process table
-                        pm2 status
 
                         # 7. Post-deployment health verification
                         echo "Verifying health on ${health_check_endpoint}..."
