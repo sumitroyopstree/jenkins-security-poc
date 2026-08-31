@@ -303,7 +303,7 @@ def call(Map step_params) {
         def secret_region         = get_params_value(enableOverride, step_params, 'secret_region') ?: 'us-east-1'
         def custom_env_content    = get_params_value(enableOverride, step_params, 'custom_env_content') ?: ''
         def run_db_migration      = get_params_value(enableOverride, step_params, 'run_db_migration') ?: false
-        def start_command         = get_params_value(enableOverride, step_params, 'start_command') ?: 'node dist/index.js'
+        def start_command         = get_params_value(enableOverride, step_params, 'start_command') ?: ''
         def health_check_endpoint = get_params_value(enableOverride, step_params, 'health_check_endpoint') ?: 'http://127.0.0.1:80/api/health'
 
         // S3 Tarball parameters (supports both artifact_name and image_tag)
@@ -344,7 +344,6 @@ def call(Map step_params) {
 
             stage('Execute Recreate Deployment') {
                 sshagent([ssh_credentials_id]) {
-                    // Pre-check SSH connection with 10s timeout
                     sh """
                         echo "[INFO] Verifying SSH connectivity to ${server_ip}:22..."
                         ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes ubuntu@${server_ip} 'echo "[SUCCESS] Connected to \$(hostname)"'
@@ -376,7 +375,7 @@ def call(Map step_params) {
                             mv dist dist.bak
                         fi
 
-                        # 3. Pull bundle from S3 using Target Instance IAM Role
+                        # 3. Pull bundle from S3
                         echo "[3/6] Fetching artifact from S3: s3://${s3_bucket}/${s3_keypath}/${artifact_name}..."
                         aws s3 cp "s3://${s3_bucket}/${s3_keypath}/${artifact_name}" /tmp/release.tar.gz --region "${secret_region}"
 
@@ -384,6 +383,14 @@ def call(Map step_params) {
                         echo "[4/6] Unpacking release bundle..."
                         tar -xzf /tmp/release.tar.gz -C "${deploy_dir}"
                         rm -f /tmp/release.tar.gz
+
+                        # Print folder contents for visibility
+                        echo "--- Extracted Directory Structure ---"
+                        ls -la
+                        if [ -d "dist" ]; then
+                            echo "--- Contents of dist/ ---"
+                            ls -la dist/
+                        fi
 
                         # 5. Inject .env configuration
                         echo "[5/6] Writing .env configuration..."
@@ -412,37 +419,57 @@ EOF
                     }
 
                     deployScript += """
-                        # 6. Start PM2 application using dynamic entrypoint detection
-                        echo "[6/6] Locating entry point and launching under PM2..."
+                        # 6. Locate Entry Point & Start Application under PM2
+                        echo "[6/6] Determining entry point and starting under PM2..."
 
-                        ENTRY_FILE=""
+                        ENTRY_TARGET=""
+                        
+                        # Priority 1: ecosystem.config.js / ecosystem.json
                         if [ -f "ecosystem.config.js" ]; then
-                            echo "Found ecosystem.config.js"
-                            pm2 start ecosystem.config.js --name "${app_name}" --update-env
-                        else
-                            # Search for common entrypoints
-                            for candidate in "dist/main.js" "dist/src/main.js" "dist/index.js" "dist/src/index.js" "dist/server.js" "dist/app.js"; do
-                                if [ -f "\$candidate" ]; then
-                                    ENTRY_FILE="\$candidate"
-                                    break
-                                fi
-                            done
-
-                            # If not found in standard paths, locate the first top-level JS file inside dist
-                            if [ -z "\$ENTRY_FILE" ]; then
-                                ENTRY_FILE=\$(find dist -maxdepth 2 -name "*.js" | head -n 1)
-                            fi
-
-                            if [ -n "\$ENTRY_FILE" ]; then
-                                echo "Launching detected entrypoint: \$ENTRY_FILE..."
-                                pm2 start "\$ENTRY_FILE" --name "${app_name}" --update-env
-                            else
-                                echo "No dist JS file found, falling back to: ${start_command}..."
-                                pm2 start "${start_command}" --name "${app_name}" --update-env
+                            ENTRY_TARGET="ecosystem.config.js"
+                        elif [ -f "ecosystem.json" ]; then
+                            ENTRY_TARGET="ecosystem.json"
+                        # Priority 2: main field in package.json
+                        elif [ -f "package.json" ] && grep -q '"main"' package.json; then
+                            PKG_MAIN=\$(grep -o '"main": *"[^"]*"' package.json | head -n 1 | cut -d'"' -f4)
+                            if [ -n "\$PKG_MAIN" ] && [ -f "\$PKG_MAIN" ]; then
+                                ENTRY_TARGET="\$PKG_MAIN"
                             fi
                         fi
 
+                        # Priority 3: Search common entry points
+                        if [ -z "\$ENTRY_TARGET" ]; then
+                            for file in dist/index.js dist/main.js dist/server.js dist/app.js dist/src/index.js dist/src/main.js server.js index.js app.js; do
+                                if [ -f "\$file" ]; then
+                                    ENTRY_TARGET="\$file"
+                                    break
+                                fi
+                            done
+                        fi
+
+                        # Priority 4: First available JS file in dist/ or root
+                        if [ -z "\$ENTRY_TARGET" ]; then
+                            ENTRY_TARGET=\$(find dist/ -maxdepth 2 -name "*.js" 2>/dev/null | head -n 1)
+                        fi
+
+                        # Priority 5: Fallback to custom start command if set
+                        if [ -z "\$ENTRY_TARGET" ] && [ -n "${start_command}" ]; then
+                            ENTRY_TARGET="${start_command}"
+                        fi
+
+                        if [ -z "\$ENTRY_TARGET" ]; then
+                            echo "[FATAL] No valid entry file (main.js, index.js, ecosystem.config.js, server.js) found in release bundle!"
+                            ls -la
+                            exit 1
+                        fi
+
+                        echo "Starting application with entry target: \$ENTRY_TARGET"
+                        pm2 start "\$ENTRY_TARGET" --name "${app_name}" --update-env
                         pm2 save
+
+                        # Allow runtime to boot
+                        sleep 4
+                        pm2 status
 
                         # 7. Post-deployment health verification
                         echo "Verifying health on ${health_check_endpoint}..."
