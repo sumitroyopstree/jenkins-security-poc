@@ -191,8 +191,8 @@ node('HRC-Kollect-Jenkins-Agent') {
         artifact_destination_type        : 'ecr',
         docker_image_name                : 'kollect-reporting-module',
         jenkins_aws_credentials_id       : 'HRC_AWS_CREDENTIALS',
-        ecr_repo_name                    : hrc-kollect-cicd/apps,
-        ecr_region                       : 'us-east-1',
+        ecr_repo_name                    : 'hrc-kollect-cicd/apps',
+        ecr_region                       : env_cfg.ecr_region,
         account_id                       : env_cfg.account_id,
 
         // TRIGGER CD PIPELINE
