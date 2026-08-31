@@ -153,7 +153,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         perform_code_build               : true,
         build_tool                       : 'maven',
         java_version                     : '17',
-        pom_location                     : 'pom.xml',
+        pom_location                     : '',
 
         // UNIT TESTING
         unit_testing_check               : 'false',
