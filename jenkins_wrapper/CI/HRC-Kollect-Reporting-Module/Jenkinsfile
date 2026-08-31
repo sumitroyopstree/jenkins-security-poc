@@ -154,6 +154,8 @@ node('HRC-Kollect-Jenkins-Agent') {
         build_tool                       : 'maven',
         java_version                     : '17',
         pom_location                     : '',
+        codeartifact_dependency          : false,
+        artifact_jar_name                : 'report-service-APP_VERSION.jar',
 
         // UNIT TESTING
         unit_testing_check               : 'false',
