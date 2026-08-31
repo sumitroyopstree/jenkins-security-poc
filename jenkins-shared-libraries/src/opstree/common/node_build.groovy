@@ -1422,7 +1422,7 @@ def build_and_package_node(Map step_params) {
         if (prune_dev_dependencies) {
 
             prune_command =
-                'yarn install --production=true --ignore-scripts --prefer-offline' // --frozen-lockfile commented for testing
+                'yarn install --development=true --ignore-scripts --prefer-offline' // --frozen-lockfile commented for testing
         }
 
     } else {

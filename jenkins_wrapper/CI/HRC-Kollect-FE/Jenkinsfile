@@ -133,6 +133,8 @@ node('HRC-Kollect-Jenkins-Agent') {
         app_name                         : 'hrc-kollect-fe',
         build_command                    : 'yarn build',
         build_output_path                : 'dist',
+        include_node_modules             : true,
+        prune_dev_dependencies           : true,
 
         // PUBLISH TO S3
         artifact_publish_check           : true,
