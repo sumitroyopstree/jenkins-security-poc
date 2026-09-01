@@ -1961,7 +1961,7 @@ def build_and_package_node(Map step_params) {
     def package_manager = step_params.package_manager?.toString()?.trim()?.toLowerCase() ?: 'yarn'
     // Auto-derive app_name from repo URL if not explicitly provided
     // e.g. https://gitlab.../hrc/kollect-client-billing-frontend.git → 'kollect-client-billing-frontend'
-    def _repoBasename = repo_url ? repo_url.replaceAll('.*/([^/]+?)(\.git)?$', '$1') : 'node-app'
+    def _repoBasename = repo_url ? repo_url.tokenize('/')[-1].replace('.git', '') : 'node-app'
     def app_name = step_params.app_name?.toString()?.trim() ?: _repoBasename
     // =========================================================
     // NEXT.JS AUTO-DETECTION
