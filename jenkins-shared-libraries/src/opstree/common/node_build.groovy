@@ -2077,13 +2077,12 @@ def build_and_package_node(Map step_params) {
     def prune_command = ''
 
     if (package_manager == 'yarn') {
-        install_command = 'yarn install --prefer-offline'
+        install_command = 'if [ -f "yarn.lock" ]; then (yarn install --prefer-offline || (echo "Yarn cache error detected. Cleaning yarn cache..." && yarn cache clean && yarn install)); else echo "No yarn.lock found. Falling back to npm install..." && npm install; fi'
         if (prune_dev_dependencies) {
-            // Corrected: --production=true retains dependencies and strips devDependencies
-            prune_command = 'yarn install --production=true --ignore-scripts --prefer-offline'
+            prune_command = 'if [ -f "yarn.lock" ]; then yarn install --production=true --ignore-scripts --prefer-offline; else npm prune --omit=dev; fi'
         }
     } else {
-        install_command = 'npm install --prefer-offline'
+        install_command = 'npm install'
         if (prune_dev_dependencies) {
             prune_command = 'npm prune --omit=dev'
         }

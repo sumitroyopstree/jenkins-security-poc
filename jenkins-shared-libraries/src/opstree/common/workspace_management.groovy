@@ -25,6 +25,7 @@ def workspace_management(Map step_params) {
                 cleanWhenUnstable: params.clean_when_build_unstable.toBoolean()
             )
         def workspace = env.WORKSPACE
+        sh "sudo chown -R \$(id -u):\$(id -g) ${workspace} ${workspace}@tmp ${workspace}@script ${workspace}@libs 2>/dev/null || true"
         try {
             if (fileExists("${workspace}@tmp")) {
                 dir("${workspace}@tmp") {

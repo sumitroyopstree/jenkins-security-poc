@@ -62,10 +62,11 @@ def sonar(Map step_params) {
         }
 
         // Build the docker command - sonar_cmd uses Groovy vars (safe, not secrets)
-        // SONAR_TOKEN is injected via \$SONAR_TOKEN (shell variable) to avoid insecure GString interpolation
+        // SONAR_TOKEN and SONARQUBE_SCANNER_PARAMS are passed into Docker container
         def docker_cmd = "docker run --rm --user root" +
                          " -v \$WORKSPACE/${repo_dir}:/usr/src" +
                          " -e SONAR_TOKEN=\$SONAR_TOKEN" +
+                         " -e SONARQUBE_SCANNER_PARAMS=\"\$SONARQUBE_SCANNER_PARAMS\"" +
                          " -w /usr/src" +
                          " sonarsource/sonar-scanner-cli ${sonar_cmd}" +
                          " -Dsonar.working.directory=/usr/src/.scannerwork"
@@ -75,6 +76,7 @@ def sonar(Map step_params) {
                         withCredentials([string(credentialsId: jenkins_sonarqube_token_creds_id , variable: 'SONAR_TOKEN')]) {
                             withSonarQubeEnv('SonarQube') {
                                 sh "${docker_cmd}"
+                                sh "sudo chown -R \$(id -u):\$(id -g) \$WORKSPACE/${repo_dir}/.scannerwork 2>/dev/null || true"
                                 logger.logger('msg':'Static Code Analysis Scanning Complete', 'level':'INFO')
                                 sleep(5)
                                 timeout(time: 2, unit: 'MINUTES') {
@@ -98,6 +100,7 @@ def sonar(Map step_params) {
                         withCredentials([string(credentialsId: jenkins_sonarqube_token_creds_id , variable: 'SONAR_TOKEN')]) {
                             withSonarQubeEnv('SonarQube') {
                                 sh "${docker_cmd}"
+                                sh "sudo chown -R \$(id -u):\$(id -g) \$WORKSPACE/${repo_dir}/.scannerwork 2>/dev/null || true"
                                 logger.logger('msg':'Static Code Analysis Scanning Complete', 'level':'INFO')
                                 sleep(5)
                                 timeout(time: 2, unit: 'MINUTES') {

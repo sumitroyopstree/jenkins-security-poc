@@ -63,7 +63,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         // BUILD & PACKAGE ARTIFACT (NODE.JS)
         perform_code_build               : true,
         node_version                     : '20',
-        package_manager                  : 'yarn',
+        package_manager                  : 'npm',
         app_name                         : 'hrc-kollect-client-billing-be',
 
         // PUBLISH TO S3
