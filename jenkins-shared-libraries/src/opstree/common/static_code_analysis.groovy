@@ -77,15 +77,15 @@ def sonar(Map step_params) {
                             withSonarQubeEnv('SonarQube') {
                                 sh "${docker_cmd}"
                                 sh "sudo chown -R \$(id -u):\$(id -g) \$WORKSPACE/${repo_dir}/.scannerwork 2>/dev/null || true"
+                                sh "mkdir -p \$WORKSPACE/.scannerwork && cp -f \$WORKSPACE/${repo_dir}/.scannerwork/report-task.txt \$WORKSPACE/.scannerwork/report-task.txt 2>/dev/null || true"
+                                sh "cp -f \$WORKSPACE/${repo_dir}/.scannerwork/report-task.txt \$WORKSPACE/report-task.txt 2>/dev/null || true"
                                 logger.logger('msg':'Static Code Analysis Scanning Complete', 'level':'INFO')
                                 sleep(5)
                                 timeout(time: 2, unit: 'MINUTES') {
-                                    dir("${WORKSPACE}/${repo_dir}") {
-                                        def qg = waitForQualityGate()
-                                        echo "Finished waiting. Quality Gate Status: ${qg.status}"
-                                        if (qg.status != 'OK') {
-                                            logger.logger('msg': "Pipeline aborted due to quality gate failure: ${qg.status}. But Ignoring as per User input", 'level':'WARN')
-                                        }
+                                    def qg = waitForQualityGate()
+                                    echo "Finished waiting. Quality Gate Status: ${qg.status}"
+                                    if (qg.status != 'OK') {
+                                        logger.logger('msg': "Pipeline aborted due to quality gate failure: ${qg.status}. But Ignoring as per User input", 'level':'WARN')
                                     }
                                 }
                             }
@@ -101,16 +101,16 @@ def sonar(Map step_params) {
                             withSonarQubeEnv('SonarQube') {
                                 sh "${docker_cmd}"
                                 sh "sudo chown -R \$(id -u):\$(id -g) \$WORKSPACE/${repo_dir}/.scannerwork 2>/dev/null || true"
+                                sh "mkdir -p \$WORKSPACE/.scannerwork && cp -f \$WORKSPACE/${repo_dir}/.scannerwork/report-task.txt \$WORKSPACE/.scannerwork/report-task.txt 2>/dev/null || true"
+                                sh "cp -f \$WORKSPACE/${repo_dir}/.scannerwork/report-task.txt \$WORKSPACE/report-task.txt 2>/dev/null || true"
                                 logger.logger('msg':'Static Code Analysis Scanning Complete', 'level':'INFO')
                                 sleep(5)
                                 timeout(time: 2, unit: 'MINUTES') {
-                                    dir("${WORKSPACE}/${repo_dir}") {
-                                        def qg = waitForQualityGate()
-                                        echo "Finished waiting. Quality Gate Status: ${qg.status}"
-                                        if (qg.status != 'OK') {
-                                            logger.logger('msg': "Pipeline aborted due to quality gate failure: ${qg.status}.", 'level':'ERROR')
-                                            error("Quality gate failure: ${qg.status}")
-                                        }
+                                    def qg = waitForQualityGate()
+                                    echo "Finished waiting. Quality Gate Status: ${qg.status}"
+                                    if (qg.status != 'OK') {
+                                        logger.logger('msg': "Pipeline aborted due to quality gate failure: ${qg.status}.", 'level':'ERROR')
+                                        error("Quality gate failure: ${qg.status}")
                                     }
                                 }
                             }
