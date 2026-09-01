@@ -169,8 +169,18 @@ def git_checkout(Map step_params) {
                 }
                 sh "sudo chown -R \$(id -u):\$(id -g) ${WORKSPACE} 2>/dev/null || true"
             } catch (Exception e) {
-                logger.logger(['msg': "Git Checkout Failed Error Details: ${e}", 'level': 'ERROR'])
-                throw e
+                logger.logger(['msg': "Docker-based Git Checkout failed (${e.message}), attempting Jenkins native git checkout fallback...", 'level': 'WARN'])
+                try {
+                    sh "mkdir -p ${WORKSPACE}/${repo_dir}"
+                    dir("${WORKSPACE}/${repo_dir}") {
+                        git branch: "${repo_branch}", credentialsId: jenkins_git_creds_id, url: "${repo_url}"
+                    }
+                    sh "sudo chown -R \$(id -u):\$(id -g) ${WORKSPACE} 2>/dev/null || true"
+                    logger.logger(['msg': "Native Jenkins Git Checkout successful!", 'level': 'INFO'])
+                } catch (Exception fallbackErr) {
+                    logger.logger(['msg': "Git Checkout Failed Error Details: ${fallbackErr}", 'level': 'ERROR'])
+                    throw fallbackErr
+                }
             }
         }
     }
