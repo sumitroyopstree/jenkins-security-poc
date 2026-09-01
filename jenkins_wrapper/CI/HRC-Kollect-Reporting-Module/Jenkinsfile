@@ -37,7 +37,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         gitleaks_report_jenkins_publish  : true,
 
         // DEPENDENCY SCANNING (OWASP)
-        dependency_check                          : 'false',
+        dependency_check                          : 'true',
         dependency_scan_tool                      : 'owasp',
         owasp_project_name                        : 'kollect-reporting-module',
         owasp_report_publish                      : 'true',

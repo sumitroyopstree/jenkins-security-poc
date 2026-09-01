@@ -26,7 +26,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         repo_ssh_url                     : 'git@gitlab.healthreconconnect.com:hrc/kollect-frontend.git',
         repo_branch                      : params.BRANCH ?: 'main',
         repo_url_type                    : 'http',
-        jenkins_git_creds_id             : 'hasantha-hrc-gitlab-access',
+        jenkins_git_creds_id             : 'piyushu-gitlab-token',
         source_code_path                 : '',
 
         // PRE-BUILD CHECKS
@@ -37,7 +37,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         gitleaks_report_jenkins_publish  : true,
 
         // DEPENDENCY SCANNING (OWASP)
-        dependency_check                          : 'false',
+        dependency_check                          : 'true',
         dependency_scan_tool                      : 'owasp',
         owasp_project_name                        : 'hrc-kollect-frontend',
         owasp_report_publish                      : 'true',
@@ -46,7 +46,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         nvd_api_key_creds_id                      : 'NVD_API_KEY',
 
         // UNIT TESTING
-        unit_testing_check               : 'false',
+        unit_testing_check               : 'true',
         fail_job_if_unit_issue_detected  : 'false',
         unit_test_reports_path           : '**/junit*.xml',
 
