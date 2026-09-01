@@ -673,18 +673,17 @@ def call(Map step_params) {
                         pm2 delete "${app_name}" 2>/dev/null || true
 
                         # 2. Directory setup & backup
-                        mkdir -p "${deploy_dir}"
+                        echo "[2/6] Preparing deployment directory..."
+                        if [ ! -d "${deploy_dir}" ]; then
+                            sudo mkdir -p "${deploy_dir}" || mkdir -p "${deploy_dir}"
+                            sudo chown -R \$(id -u):\$(id -g) "${deploy_dir}"
+                        fi
                         cd "${deploy_dir}"
 
                         if [ -d "dist" ]; then
-                            echo "[2/6] Backing up existing dist..."
+                            echo "Backing up existing dist..."
                             rm -rf dist.bak
                             mv dist dist.bak
-                        fi
-
-                        # Preserve existing .env if backup exists
-                        if [ -f ".env" ]; then
-                            cp .env /tmp/${app_name}.env.bak
                         fi
 
                         # 3. Pull bundle from S3
