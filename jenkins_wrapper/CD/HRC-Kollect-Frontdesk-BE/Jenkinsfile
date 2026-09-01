@@ -80,6 +80,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         secret_arn           : currentEnv.secret_arn,
         package_manager      : 'yarn',
         start_command        : 'yarn start',
+        health_check_endpoint: 'http://127.0.0.1:3000/api/health',
 
         // NOTIFICATION
         notification_enabled                    : true,
