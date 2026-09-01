@@ -2121,9 +2121,21 @@ echo "Running Build"
 echo "========================================"
 ${build_command}
 
-if [ ! -e "${build_output_path}" ]; then
-    echo "ERROR: Expected build output '${build_output_path}' was not created."
-    exit 1
+ACTUAL_OUTPUT="${build_output_path}"
+if [ ! -e "\${ACTUAL_OUTPUT}" ]; then
+    if [ -d ".next" ]; then
+        echo "Auto-detected Next.js build output directory: .next"
+        ACTUAL_OUTPUT=".next"
+    elif [ -d "build" ]; then
+        echo "Auto-detected build output directory: build"
+        ACTUAL_OUTPUT="build"
+    elif [ -d "dist" ]; then
+        echo "Auto-detected build output directory: dist"
+        ACTUAL_OUTPUT="dist"
+    else
+        echo "ERROR: Expected build output '${build_output_path}' was not created."
+        exit 1
+    fi
 fi
 
 ${
@@ -2142,7 +2154,7 @@ echo "Skipping DevDependency Pruning"
 echo "========================================"
 echo "Preparing Artifact Inputs"
 echo "========================================"
-set -- "package.json" ${shellQuote(build_output_path)}
+set -- "package.json" "\$ACTUAL_OUTPUT"
 
 ${
     include_node_modules
