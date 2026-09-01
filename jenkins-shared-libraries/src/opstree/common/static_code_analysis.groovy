@@ -42,9 +42,12 @@ def sonar(Map step_params) {
         repo_dir = repo_dir + source_code_path
 
         def sonar_cmd = ""
-        if (sonar_project_key != 'null' && sonar_project_name != 'null') {
+        def actual_host = env.SONAR_HOST_URL ?: ((sonar_host_url != 'null' && sonar_host_url != '' && sonar_host_url != 'http://10.2.1.209:9000') ? sonar_host_url : 'http://10.2.10.250:9000')
+
+        if (path_to_sonar_properties != 'null' && path_to_sonar_properties != '') {
+            sonar_cmd = "-Dproject.settings=${path_to_sonar_properties} -Dsonar.host.url=${actual_host}"
+        } else if (sonar_project_key != 'null' && sonar_project_key != '' && sonar_project_name != 'null' && sonar_project_name != '') {
             def actual_sources = (sonar_sources != 'null' && sonar_sources != '') ? sonar_sources : '.'
-            def actual_host   = (sonar_host_url != 'null' && sonar_host_url != '')  ? sonar_host_url  : 'http://10.10.128.2:9000'
             def actual_extra  = (sonar_extra_args != 'null' && sonar_extra_args != '') ? sonar_extra_args : ''
             sonar_cmd = "-Dsonar.projectKey=${sonar_project_key} " +
                         "-Dsonar.projectName=${sonar_project_name} " +
@@ -55,7 +58,7 @@ def sonar(Map step_params) {
                         "-Dsonar.scm.exclusions.disabled=true " +
                         "${actual_extra}"
         } else {
-            sonar_cmd = "-Dproject.settings=${path_to_sonar_properties}"
+            sonar_cmd = "-Dproject.settings=sonar-project.properties -Dsonar.host.url=${actual_host}"
         }
 
         // Build the docker command - sonar_cmd uses Groovy vars (safe, not secrets)

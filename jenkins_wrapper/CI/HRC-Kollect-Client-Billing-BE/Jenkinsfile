@@ -51,12 +51,12 @@ node('HRC-Kollect-Jenkins-Agent') {
         unit_test_reports_path           : '**/junit*.xml',
 
         // STATIC CODE ANALYSIS (SONARQUBE)
-        static_code_analysis_check              : false,
+        static_code_analysis_check              : true,
         codebase_to_scan_directory              : '.',
         sonar_project_key                       : 'hrc-kollect-client-billing-backend',
         sonar_project_name                      : 'hrc-kollect-client-billing-backend',
         sonar_sources                           : '.',
-        sonar_host_url                          : 'http://10.2.1.209:9000',
+        sonar_extra_args                        : '',
         fail_job_if_analysis_returned_exception : 'false',
         jenkins_sonarqube_token_creds_id        : 'HRC_SONARQUBE_TOKEN',
 

@@ -52,12 +52,12 @@ node('HRC-Kollect-Jenkins-Agent') {
         build_tool                       : 'maven',
 
         // STATIC CODE ANALYSIS (SONARQUBE)
-        static_code_analysis_check              : false,
+        static_code_analysis_check              : true,
         codebase_to_scan_directory              : '.',
         sonar_project_key                       : 'hrc-amd-sync-service',
         sonar_project_name                      : 'HRC-AMD-Sync-Service',
-        sonar_sources                           : '.',
-        sonar_host_url                          : 'http://10.2.1.209:9000',
+        sonar_sources                           : 'src/main/java',
+        sonar_extra_args                        : '-Dsonar.java.binaries=target/classes',
         fail_job_if_analysis_returned_exception : 'false',
         jenkins_sonarqube_token_creds_id        : 'HRC_SONARQUBE_TOKEN',
         app_stack                               : 'java',
