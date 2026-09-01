@@ -1,102 +1,43 @@
-// @Library('jenkins-shared-libraries@feature-cicd') _
-// def javapipeline = new opstree.ci.templates.java_ci.java_ci()
-
-// node('HRC-Kollect-Jenkins-Agent') {
-//     javapipeline.call([
-//         enable_jenkins_build_param_override: true,
-
-//         // WORKSPACE MANAGEMENT
-//         clean_workspace                  : true,
-
-//         // VCS MANAGEMENT
-//         repo_https_url                   : 'https://gitlab.healthreconconnect.com/hrc/amd-sync-service.git',
-//         repo_ssh_url                     : 'git@gitlab.healthreconconnect.com:hrc/amd-sync-service.git',
-//         repo_branch                      : params.BRANCH ?: 'main',
-//         repo_url_type                    : 'http',
-//         jenkins_git_creds_id             : 'hasantha-hrc-gitlab-access',
-//         source_code_path                 : '',
-
-//         // PRE-BUILD CHECKS
-//         gitleaks_check                   : true,
-//         fail_job_if_leak_detected        : false,
-//         gitleaks_scan_mode               : 'full',
-//         gitleaks_report_jenkins_publish  : true,
-
-//         dependency_check                          : 'true',
-//         dependency_scan_tool                      : 'owasp',
-//         owasp_project_name                        : 'hrc-amd-sync-service',
-//         owasp_report_publish                      : 'true',
-//         owasp_report_format                       : 'html',
-//         fail_job_if_dependency_returned_exception : 'false',
-//         nvd_api_key_creds_id                      : 'NVD_API_KEY',
-
-//         // UNIT TESTING
-//         unit_testing_check               : 'true',
-//         fail_job_if_unit_issue_detected  : 'false',
-//         unit_test_reports_path           : '**/target/surefire-reports/*.xml',
-//         build_tool                       : 'maven',
-
-//         // STATIC CODE ANALYSIS (SONARQUBE)
-//         static_code_analysis_check              : true,
-//         codebase_to_scan_directory              : '.',
-//         sonar_project_key                       : 'hrc-amd-sync-service',
-//         sonar_project_name                      : 'HRC-AMD-Sync-Service',
-//         sonar_sources                           : '.',
-//         sonar_host_url                          : 'http://10.2.1.209:9000',
-//         fail_job_if_analysis_returned_exception : 'false',
-//         jenkins_sonarqube_token_creds_id        : 'HRC_SONARQUBE_TOKEN',
-//         app_stack                               : 'java',
-
-//         // DOCKER BUILD & PUBLISH
-//         perform_build_dockerfile         : true,
-//         image_name                       : 'hrc-amd-sync-service',
-//         artifact_publish_check           : true,
-//         artifact_destination_type        : 'ecr',
-//         jenkins_aws_credentials_id       : 'hrc-aws-ecr-credentials',
-//         ecr_repo_name                    : 'hrc-amd-sync-service',
-//         ecr_region                       : 'us-east-1',
-//         account_id                       : '167121004129',
-
-//         // TRIGGER CD PIPELINE
-//         enable_trigger_cd_pipeline       : params.TRIGGER_CD != null ? params.TRIGGER_CD : true,
-//         trigger_cd_pipeline_path         : 'CD/HRC-AMD-Sync-Service',
-//         image_tag_build_param            : 'image_tag',
-
-//         // NOTIFICATION
-//         notification_enabled                    : true,
-//         notification_channel                    : 'gmail',
-//         gmail_notification_from_email_id        : 'smtp@kernernorland.com',
-//         gmail_notification_recipients_email_ids : 'asangai@healthreconconnect.com'
-//     ])
-// }
-
-
-
 @Library('jenkins-shared-libraries@feature-cicd') _
-def javapipeline = new opstree.ci.templates.java_ci.java_ci()
+def cipipeline = new opstree.ci.templates.java_ci.java_ci()
+
+def targetEnv = (params.ENVIRONMENT ?: 'DEV').toUpperCase()
+
+def envMap = [
+    'TEST': [ecr_repo_name: 'hrc-kollect-cicd/apps', ecr_region: 'us-east-1', account_id: '167121004129', credentials_id: 'hrc-aws-ecr-credentials'],
+    'DEV' : [ecr_repo_name: 'hrc-kollect-cicd/apps', ecr_region: 'us-east-1', account_id: '167121004129', credentials_id: 'hrc-aws-ecr-credentials'],
+    'QA'  : [ecr_repo_name: 'hrc-kollect-cicd/apps', ecr_region: 'us-east-1', account_id: '167121004129', credentials_id: 'hrc-aws-ecr-credentials'],
+    'DEMO': [ecr_repo_name: 'hrc-kollect-cicd/apps', ecr_region: 'us-east-1', account_id: '167121004129', credentials_id: 'hrc-aws-ecr-credentials'],
+    'STG' : [ecr_repo_name: 'hrc-kollect-cicd/apps', ecr_region: 'us-east-1', account_id: '167121004129', credentials_id: 'hrc-aws-ecr-credentials'],
+    'PROD': [ecr_repo_name: 'hrc-kollect-cicd/apps', ecr_region: 'us-east-1', account_id: '167121004129', credentials_id: 'hrc-aws-ecr-credentials']
+]
+
+def currentEnv = envMap[targetEnv] ?: envMap['DEV']
 
 node('HRC-Kollect-Jenkins-Agent') {
-    javapipeline.call([
+    cipipeline.call([
         enable_jenkins_build_param_override: true,
 
         // WORKSPACE MANAGEMENT
-        clean_workspace                  : true,
+        clean_workspace                         : true,
 
         // VCS MANAGEMENT
-        repo_https_url                   : 'https://gitlab.healthreconconnect.com/hrc/amd-sync-service.git',
-        repo_ssh_url                     : 'git@gitlab.healthreconconnect.com:hrc/amd-sync-service.git',
-        repo_branch                      : params.BRANCH ?: 'main',
-        repo_url_type                    : 'http',
-        jenkins_git_creds_id             : 'hasantha-hrc-gitlab-access',
-        source_code_path                 : '',
+        repo_https_url                          : 'https://gitlab.healthreconconnect.com/hrc/amd-sync-service.git',
+        repo_ssh_url                            : 'git@gitlab.healthreconconnect.com:hrc/amd-sync-service.git',
+        repo_branch                             : params.BRANCH ?: 'main',
+        repo_url_type                           : 'http',
+        jenkins_git_creds_id                    : 'piyushu-gitlab-token',
+        source_code_path                        : '',
 
         // PRE-BUILD CHECKS
+        // CREDS SCANNING (GITLEAKS)
         gitleaks_check                   : true,
         fail_job_if_leak_detected        : false,
         gitleaks_scan_mode               : 'full',
         gitleaks_report_jenkins_publish  : true,
 
-        dependency_check                          : 'false',
+        // DEPENDENCY SCANNING (OWASP)
+        dependency_check                          : 'true',
         dependency_scan_tool                      : 'owasp',
         owasp_project_name                        : 'hrc-amd-sync-service',
         owasp_report_publish                      : 'true',
@@ -105,7 +46,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         nvd_api_key_creds_id                      : 'NVD_API_KEY',
 
         // UNIT TESTING
-        unit_testing_check               : 'false',
+        unit_testing_check               : 'true',
         fail_job_if_unit_issue_detected  : 'false',
         unit_test_reports_path           : '**/target/surefire-reports/*.xml',
         build_tool                       : 'maven',
@@ -126,17 +67,16 @@ node('HRC-Kollect-Jenkins-Agent') {
         build_tool                              : 'maven',
         java_version                            : '17',
         pom_location                            : '',
-        codeartifact_dependency                 : 'false', // Set 'true' if pulling dependencies from AWS CodeArtifact
+        codeartifact_dependency                 : 'false',
 
         // DOCKER BUILD & PUBLISH
         perform_build_dockerfile         : true,
         image_name                       : 'hrc-amd-sync-service',
         artifact_publish_check           : true,
         artifact_destination_type        : 'ecr',
-     // jenkins_aws_credentials_id       : 'hrc-aws-ecr-credentials',
-        ecr_repo_name                    : 'hrc-kollect-cicd/apps',
-        ecr_region                       : 'us-east-1',
-        account_id                       : '167121004129',
+        ecr_repo_name                    : currentEnv.ecr_repo_name,
+        ecr_region                       : currentEnv.ecr_region,
+        account_id                       : currentEnv.account_id,
 
         // POST-BUILD CHECKS (TRIVY & SIZE VALIDATOR)
         image_scanning_check                    : true,
@@ -145,13 +85,14 @@ node('HRC-Kollect-Jenkins-Agent') {
         fail_job_if_scan_failed                 : 'false',
 
         image_size_validator_check              : true,
-        max_allowed_image_size                  : '500', // max size in MB
+        max_allowed_image_size                  : '500',
         fail_job_if_validation_fail             : 'false',
 
         // TRIGGER CD PIPELINE
         enable_trigger_cd_pipeline       : params.TRIGGER_CD != null ? params.TRIGGER_CD : true,
         trigger_cd_pipeline_path         : 'CD/HRC-AMD-Sync-Service',
         image_tag_build_param            : 'image_tag',
+        environment                      : targetEnv,
 
         // NOTIFICATION
         notification_enabled                    : true,

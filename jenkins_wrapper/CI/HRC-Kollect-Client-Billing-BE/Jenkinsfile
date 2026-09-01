@@ -1,238 +1,86 @@
-// @Library('jenkins-shared-libraries@feature-cicd') _
-// def cipipeline = new opstree.ci.templates.nodejs_ci.nodejs_ci()
-
-// node('HRC-Kollect-Jenkins-Agent') {
-//     cipipeline.call([
-//         enable_jenkins_build_param_override: true,
-
-//         // WORKSPACE MANAGEMENT
-//         clean_workspace                  : true,
-
-//         // VCS MANAGEMENT
-//         repo_https_url                   : 'https://gitlab.healthreconconnect.com/hrc/kollect-client-billing-service.git',
-//         repo_ssh_url                     : 'git@gitlab.healthreconconnect.com:hrc/kollect-client-billing-service.git',
-//         repo_branch                      : params.BRANCH ?: 'main',
-//         repo_url_type                    : 'http',
-//         jenkins_git_creds_id             : 'hasantha-hrc-gitlab-access',
-//         source_code_path                 : '',
-
-//         // PRE-BUILD CHECKS
-//         // CREDS SCANNING (GITLEAKS)
-//         gitleaks_check                   : true,
-//         fail_job_if_leak_detected        : false,
-//         gitleaks_scan_mode               : 'full',
-//         gitleaks_report_jenkins_publish  : true,
-
-//         // DEPENDENCY SCANNING (OWASP)
-//         dependency_check                          : 'false',
-//         dependency_scan_tool                      : 'owasp',
-//         owasp_project_name                        : 'hrc-kollect-client-billing-backend',
-//         owasp_report_publish                      : 'true',
-//         owasp_report_format                       : 'html',
-//         fail_job_if_dependency_returned_exception : 'false',
-//         nvd_api_key_creds_id                      : 'NVD_API_KEY',
-
-//         // UNIT TESTING
-//         unit_testing_check               : 'false',
-//         fail_job_if_unit_issue_detected  : 'false',
-//         unit_test_reports_path           : '**/junit*.xml',
-
-//         // STATIC CODE ANALYSIS (SONARQUBE)
-//         static_code_analysis_check              : false,
-//         codebase_to_scan_directory              : '.',
-//         sonar_project_key                       : 'hrc-kollect-client-billing-backend',
-//         sonar_project_name                      : 'hrc-kollect-client-billing-backend',
-//         sonar_sources                           : '.',
-//         sonar_host_url                          : 'http://10.2.1.209:9000',
-//         fail_job_if_analysis_returned_exception : 'false',
-//         jenkins_sonarqube_token_creds_id        : 'HRC_SONARQUBE_TOKEN',
-
-//         // TRIGGER CD PIPELINE
-//         enable_trigger_cd_pipeline       : params.TRIGGER_CD != null ? params.TRIGGER_CD : true,
-//         trigger_cd_pipeline_path         : 'CD/HRC-Kollect-Client-Billing-BE',
-//         image_tag_build_param            : 'image_tag',
-
-//         // NOTIFICATION
-//         notification_enabled                    : true,
-//         notification_channel                    : 'gmail',
-//         gmail_notification_from_email_id        : 'smtp@kernernorland.com',
-//         gmail_notification_recipients_email_ids : 'asangai@healthreconconnect.com'
-//     ])
-// }
-
-//---------
-
-// @Library('jenkins-shared-libraries@feature-cicd') _
-// def cipipeline = new opstree.ci.templates.nodejs_ci.nodejs_ci()
-
-// node('HRC-Kollect-Jenkins-Agent') {
-//     cipipeline.call([
-//         enable_jenkins_build_param_override: true,
-
-//         // WORKSPACE MANAGEMENT
-//         clean_workspace                  : true,
-
-//         // VCS MANAGEMENT
-//         repo_https_url                   : 'https://gitlab.healthreconconnect.com/hrc/kollect-client-billing-service.git',
-//         repo_ssh_url                     : 'git@gitlab.healthreconconnect.com:hrc/kollect-client-billing-service.git',
-//         repo_branch                      : params.BRANCH ?: 'main',
-//         repo_url_type                    : 'http',
-//         jenkins_git_creds_id             : 'piyushu-gitlab-token',
-//         source_code_path                 : '',
-
-//         // PRE-BUILD CHECKS
-//         // CREDS SCANNING (GITLEAKS)
-//         gitleaks_check                   : true,
-//         fail_job_if_leak_detected        : false,
-//         gitleaks_scan_mode               : 'full',
-//         gitleaks_report_jenkins_publish  : true,
-
-//         // DEPENDENCY SCANNING (OWASP)
-//         dependency_check                          : 'false',
-//         dependency_scan_tool                      : 'owasp',
-//         owasp_project_name                        : 'hrc-kollect-client-billing-backend',
-//         owasp_report_publish                      : 'true',
-//         owasp_report_format                       : 'html',
-//         fail_job_if_dependency_returned_exception : 'false',
-//         nvd_api_key_creds_id                      : 'NVD_API_KEY',
-
-//         // UNIT TESTING
-//         unit_testing_check               : 'false',
-//         fail_job_if_unit_issue_detected  : 'false',
-//         unit_test_reports_path           : '**/junit*.xml',
-
-//         // STATIC CODE ANALYSIS (SONARQUBE)
-//         static_code_analysis_check              : false,
-//         codebase_to_scan_directory              : '.',
-//         sonar_project_key                       : 'hrc-kollect-client-billing-backend',
-//         sonar_project_name                      : 'hrc-kollect-client-billing-backend',
-//         sonar_sources                           : '.',
-//         sonar_host_url                          : 'http://10.2.1.209:9000',
-//         fail_job_if_analysis_returned_exception : 'false',
-//         jenkins_sonarqube_token_creds_id        : 'HRC_SONARQUBE_TOKEN',
-
-//         // BUILD & PACKAGE ARTIFACT (NODE.JS)
-//         perform_code_build               : true,
-//         node_version                     : '20',
-//         package_manager                  : 'yarn',
-//         app_name                         : 'hrc-kollect-client-billing-be',
-
-//         // PUBLISH TO S3
-//         artifact_publish_check           : true,
-//         artifact_destination_type        : 'S3',
-//         jenkins_aws_credentials_id       : 'hrc-aws-ecr-credentials',
-//         artifact_s3_bucket_aws_region    : 'us-east-1',
-//         artifact_s3_bucket_name          : 'hrc-cicd-test-bucket',
-//         artifact_s3_keypath_destination  : 'HRC-Kollect-Client-Billing-BE',
-
-//         // TRIGGER CD PIPELINE (Recreate Mode)
-//         enable_trigger_cd_pipeline       : params.TRIGGER_CD != null ? params.TRIGGER_CD : true,
-//         trigger_cd_pipeline_path         : 'CD/HRC-Kollect-Client-Billing-BE',
-//         image_tag_build_param            : 'artifact_name',
-
-//         // NOTIFICATION
-//         notification_enabled                    : true,
-//         notification_channel                    : 'gmail',
-//         gmail_notification_from_email_id        : 'smtp@kernernorland.com',
-//         gmail_notification_recipients_email_ids : 'asangai@healthreconconnect.com'
-//     ])
-// }
-
 @Library('jenkins-shared-libraries@feature-cicd') _
-def cdpipeline = new opstree.cd.templates.ssh_pm2.ssh_pm2_deployment()
+def cipipeline = new opstree.ci.templates.nodejs_ci.nodejs_ci()
 
-def artifactName = (env.artifact_name ?: params.artifact_name ?: env.image_tag ?: params.image_tag ?: '').trim()
-def targetEnv = (env.ENVIRONMENT ?: params.ENVIRONMENT ?: 'TEST').trim().toUpperCase()
+def targetEnv = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
 
 def envMap = [
-    'TEST': [
-        server_ip  : '10.2.30.254',
-        deploy_dir : '/opt/hrc-kollect-test/client-billing-backend',
-        app_name   : 'hrc-kollect-client-billing-backend-test',
-        ssh_creds  : 'HRC-Kollect-Test-Server',
-        secret_arn : 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.hrckollect.com-tDjPIP'
-    ],
-    'DEV' : [
-        server_ip  : '10.2.40.133',
-        deploy_dir : '/opt/hrc-kollect-dev/client-billing-backend',
-        app_name   : 'hrc-kollect-client-billing-backend-dev',
-        ssh_creds  : 'HRC-Kollect-Dev-Server',
-        secret_arn : 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.hrckollect.com-tDjPIP'
-    ],
-    'QA'  : [
-        server_ip  : '10.2.10.111',
-        deploy_dir : '/opt/hrc-kollect-qa/client-billing-backend',
-        app_name   : 'hrc-kollect-client-billing-backend-qa',
-        ssh_creds  : 'HRC-Kollect-QA-Server',
-        secret_arn : 'arn:aws:secretsmanager:us-east-1:167121004129:secret:qa-hrckollect-com-0mHt87'
-    ],
-    'DEMO': [
-        server_ip  : '10.2.40.238',
-        deploy_dir : '/opt/hrc-kollect-demo/client-billing-backend',
-        app_name   : 'hrc-kollect-client-billing-backend-demo',
-        ssh_creds  : 'HRC-Kollect-Demo-Server',
-        secret_arn : 'arn:aws:secretsmanager:us-east-1:167121004129:secret:demo-new-hrckollect-com-KrSHaN'
-    ],
-    'STG' : [
-        server_ip  : '10.2.40.170',
-        deploy_dir : '/opt/hrc-kollect-stg/client-billing-backend',
-        app_name   : 'hrc-kollect-client-billing-backend-stg',
-        ssh_creds  : 'HRC-Kollect-Stg-Server',
-        secret_arn : 'arn:aws:secretsmanager:us-east-1:167121004129:secret:stg-hrckollect-com-oLPno0'
-    ],
-    'PROD': [
-        server_ip  : '10.2.10.118',
-        deploy_dir : '/opt/hrc-kollect-prod/client-billing-backend',
-        app_name   : 'hrc-kollect-client-billing-backend-prod',
-        ssh_creds  : 'HRC-Kollect-PROD-Server',
-        secret_arn : 'arn:aws:secretsmanager:us-east-1:167121004129:secret:portal.hrckollect.com-xvlUjU'
-    ]
+    'TEST': [artifact_s3_bucket_name: 'hrc-cicd-test-bucket', artifact_s3_keypath: 'HRC-Kollect-Client-Billing-BE', aws_region: 'us-east-1', credentials_id: 'hrc-aws-ecr-credentials'],
+    'DEV' : [artifact_s3_bucket_name: 'hrc-cicd-test-bucket', artifact_s3_keypath: 'HRC-Kollect-Client-Billing-BE', aws_region: 'us-east-1', credentials_id: 'hrc-aws-ecr-credentials'],
+    'QA'  : [artifact_s3_bucket_name: 'hrc-cicd-test-bucket', artifact_s3_keypath: 'HRC-Kollect-Client-Billing-BE', aws_region: 'us-east-1', credentials_id: 'hrc-aws-ecr-credentials'],
+    'DEMO': [artifact_s3_bucket_name: 'hrc-cicd-test-bucket', artifact_s3_keypath: 'HRC-Kollect-Client-Billing-BE', aws_region: 'us-east-1', credentials_id: 'hrc-aws-ecr-credentials'],
+    'STG' : [artifact_s3_bucket_name: 'hrc-cicd-test-bucket', artifact_s3_keypath: 'HRC-Kollect-Client-Billing-BE', aws_region: 'us-east-1', credentials_id: 'hrc-aws-ecr-credentials'],
+    'PROD': [artifact_s3_bucket_name: 'hrc-cicd-test-bucket', artifact_s3_keypath: 'HRC-Kollect-Client-Billing-BE', aws_region: 'us-east-1', credentials_id: 'hrc-aws-ecr-credentials']
 ]
 
 def currentEnv = envMap[targetEnv] ?: envMap['TEST']
 
 node('HRC-Kollect-Jenkins-Agent') {
-    cdpipeline.call([
+    cipipeline.call([
         enable_jenkins_build_param_override: true,
 
         // WORKSPACE MANAGEMENT
-        clean_workspace                 : true,
+        clean_workspace                  : true,
 
-        // ENVIRONMENT & BRANCH
-        ENVIRONMENT                     : targetEnv,
-        BRANCH                          : params.BRANCH ?: 'main',
+        // VCS MANAGEMENT
+        repo_https_url                   : 'https://gitlab.healthreconconnect.com/hrc/kollect-client-billing-service.git',
+        repo_ssh_url                     : 'git@gitlab.healthreconconnect.com:hrc/kollect-client-billing-service.git',
+        repo_branch                      : params.BRANCH ?: 'main',
+        repo_url_type                    : 'http',
+        jenkins_git_creds_id             : 'piyushu-gitlab-token',
+        source_code_path                 : '',
 
-        // ARTIFACT CONFIGURATION (S3)
-        artifact_s3_bucket_name         : 'hrc-cicd-test-bucket',
-        artifact_s3_bucket_aws_region   : 'us-east-1',
-        artifact_s3_keypath_destination : 'HRC-Kollect-Client-Billing-BE',
-        artifact_name                   : artifactName,
+        // PRE-BUILD CHECKS
+        // CREDS SCANNING (GITLEAKS)
+        gitleaks_check                   : true,
+        fail_job_if_leak_detected        : false,
+        gitleaks_scan_mode               : 'full',
+        gitleaks_report_jenkins_publish  : true,
 
-        // TARGET VM & ENVIRONMENT BINDINGS
-        server_ip                       : currentEnv.server_ip,
-        deploy_dir                      : currentEnv.deploy_dir,
-        app_name                        : currentEnv.app_name,
-        node_version                    : 'v20.18.0',
-        ssh_credentials_id              : currentEnv.ssh_creds,
-        secret_arn                      : currentEnv.secret_arn,
-        secret_region                   : 'us-east-1',
-        
-        // ENV CONFIGURATION OPTIONS:
-        // Option 1: Populate from AWS Secrets Manager (Auto-fetched via secret_arn)
-        // Option 2: Provide inline custom env values (Overrides Secrets Manager if provided)
-        custom_env_content              : '', 
+        // DEPENDENCY SCANNING (OWASP)
+        dependency_check                          : 'true',
+        dependency_scan_tool                      : 'owasp',
+        owasp_project_name                        : 'hrc-kollect-client-billing-backend',
+        owasp_report_publish                      : 'true',
+        owasp_report_format                       : 'html',
+        fail_job_if_dependency_returned_exception : 'false',
+        nvd_api_key_creds_id                      : 'NVD_API_KEY',
 
-        // Extra manual .env key-values if needed (e.g. PORT=3200)
-        extra_env_vars                  : [
-            'PORT'       : '3200',
-            'NODE_ENV'   : 'production'
-        ],
+        // UNIT TESTING
+        unit_testing_check               : 'false',
+        fail_job_if_unit_issue_detected  : 'false',
+        unit_test_reports_path           : '**/junit*.xml',
 
-        run_db_migration                : false,
-        start_command                   : 'dist/main.js',
-        health_check_endpoint           : 'http://127.0.0.1:3200/api-v2/healthcheck',
+        // STATIC CODE ANALYSIS (SONARQUBE)
+        static_code_analysis_check              : false,
+        codebase_to_scan_directory              : '.',
+        sonar_project_key                       : 'hrc-kollect-client-billing-backend',
+        sonar_project_name                      : 'hrc-kollect-client-billing-backend',
+        sonar_sources                           : '.',
+        sonar_host_url                          : 'http://10.2.1.209:9000',
+        fail_job_if_analysis_returned_exception : 'false',
+        jenkins_sonarqube_token_creds_id        : 'HRC_SONARQUBE_TOKEN',
 
-        // NOTIFICATIONS
+        // BUILD & PACKAGE ARTIFACT (NODE.JS)
+        perform_code_build               : true,
+        node_version                     : '20',
+        package_manager                  : 'yarn',
+        app_name                         : 'hrc-kollect-client-billing-be',
+
+        // PUBLISH TO S3
+        artifact_publish_check           : true,
+        artifact_destination_type        : 'S3',
+        jenkins_aws_credentials_id       : currentEnv.credentials_id,
+        artifact_s3_bucket_aws_region    : currentEnv.aws_region,
+        artifact_s3_bucket_name          : currentEnv.artifact_s3_bucket_name,
+        artifact_s3_keypath_destination  : currentEnv.artifact_s3_keypath,
+
+        // TRIGGER CD PIPELINE (Recreate Mode)
+        enable_trigger_cd_pipeline       : params.TRIGGER_CD != null ? params.TRIGGER_CD : true,
+        trigger_cd_pipeline_path         : 'CD/HRC-Kollect-Client-Billing-BE',
+        image_tag_build_param            : 'artifact_name',
+        environment                      : targetEnv,
+
+        // NOTIFICATION
         notification_enabled                    : true,
         notification_channel                    : 'gmail',
         gmail_notification_from_email_id        : 'smtp@kernernorland.com',

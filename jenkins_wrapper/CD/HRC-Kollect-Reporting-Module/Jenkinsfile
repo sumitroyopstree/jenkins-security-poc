@@ -1,7 +1,23 @@
 @Library('jenkins-shared-libraries@feature-cicd') _
 def cdpipeline = new opstree.cd.templates.docker_ecr.docker_deployment()
 
+def targetEnv = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
+def imageTag = params.image_tag ?: 'latest'
+
+def envMap = [
+    'TEST': [server_ip: '10.2.30.254', ssh_creds: 'HRC-Kollect-Test-Server', app_name: 'kollect-reporting-module-test'],
+    'DEV' : [server_ip: '10.2.40.133', ssh_creds: 'HRC-Kollect-Dev-Server', app_name: 'kollect-reporting-module-dev'],
+    'QA'  : [server_ip: '10.2.10.111', ssh_creds: 'HRC-Kollect-QA-Server', app_name: 'kollect-reporting-module-qa'],
+    'DEMO': [server_ip: '10.2.40.238', ssh_creds: 'HRC-Kollect-Demo-Server', app_name: 'kollect-reporting-module-demo'],
+    'STG' : [server_ip: '10.2.40.170', ssh_creds: 'HRC-Kollect-Stg-Server', app_name: 'kollect-reporting-module-stg'],
+    'PROD': [server_ip: '10.2.10.118', ssh_creds: 'HRC-Kollect-PROD-Server', app_name: 'kollect-reporting-module-prod']
+]
+
+def currentEnv = envMap[targetEnv] ?: envMap['TEST']
+
 node('HRC-Kollect-Jenkins-Agent') {
+    currentBuild.description = "CD: HRC-Kollect-Reporting-Module | Env: ${targetEnv} | Tag: ${imageTag}"
+
     cdpipeline.call([
         enable_jenkins_build_param_override: true,
 
@@ -9,11 +25,10 @@ node('HRC-Kollect-Jenkins-Agent') {
         clean_workspace      : true,
 
         // DOCKER CONTAINER DEPLOYMENT (SSH -> Remote Server)
-        server_ip            : '10.2.40.133',
-        ssh_credentials_id   : 'HRC-Kollect-Dev-Server',
-        pem_key_path         : '/opt/dev-keys/hrc-kollect-dev.pem',
-        app_name             : 'kollect-reporting-module-dev',
-        ecr_repo             : 'kollect-reporting-module-dev',
+        server_ip            : currentEnv.server_ip,
+        ssh_credentials_id   : currentEnv.ssh_creds,
+        app_name             : currentEnv.app_name,
+        ecr_repo             : 'hrc-kollect-cicd/apps',
         ecr_account          : '167121004129',
         ecr_region           : 'us-east-1',
         container_port       : '8080',
