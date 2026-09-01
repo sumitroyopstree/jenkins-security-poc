@@ -87,15 +87,12 @@ def unit_test(Map step_params) {
             if (fail_job_if_unit_issue_detected == 'false') {
                 if (build_tool == 'maven') {
                     try {
-                        withMaven(globalMavenSettingsConfig: '', jdk: "${withmaven_globaltool_jdk}", maven: "${withmaven_globaltool_maven}", mavenSettingsConfig: '') {
-                            sh ''' echo ${WORKSPACE} '''
-                            sh """ docker run --rm \
-                                 -v ${WORKSPACE}/${repo_dir}:/app \
-                                 -w /app \
-                                 maven:3.8.6-jdk-11 \
-                                 mvn test """
-                            reports_manager.publish_static_code_analysis_issues(unit_test_reports_path: "${unit_test_reports_path}", findbugs_test_report_path: "${findbugs_test_report_path}")
-                        }
+                        sh """ docker run --rm \
+                             -v ${WORKSPACE}/${repo_dir}:/app \
+                             -w /app \
+                             maven:3.8.6-jdk-11 \
+                             mvn test """
+                        reports_manager.publish_static_code_analysis_issues(unit_test_reports_path: "${unit_test_reports_path}", findbugs_test_report_path: "${findbugs_test_report_path}")
                     }
                     catch (Exception e) {
                             logger.logger('msg':'Unit Test found Issues!! Ignoring as per User inputs', 'level':'WARN')
@@ -109,14 +106,12 @@ def unit_test(Map step_params) {
             else {
                 if (build_tool == 'maven') {
                     try {
-                    withMaven(globalMavenSettingsConfig: '', jdk: "${withmaven_globaltool_jdk}", maven: "${withmaven_globaltool_maven}", mavenSettingsConfig: '') {
-                            sh """ docker run --rm \
-                                 -v ${WORKSPACE}/${repo_dir}:/app \
-                                 -w /app \
-                                 maven:3.8.6-jdk-11 \
-                                 mvn test """
+                        sh """ docker run --rm \
+                             -v ${WORKSPACE}/${repo_dir}:/app \
+                             -w /app \
+                             maven:3.8.6-jdk-11 \
+                             mvn test """
                         reports_manager.publish_static_code_analysis_issues(unit_test_reports_path: "${unit_test_reports_path}", findbugs_test_report_path: "${findbugs_test_report_path}")
-                    }
                     }
                     catch (Exception e) {
                         logger.logger('msg':"Unit Test found Issues!!! Unit Testing Failed Error Details: ${e}", 'level':'ERROR')

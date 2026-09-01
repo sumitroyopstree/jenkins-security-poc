@@ -158,13 +158,12 @@ def notification(Map step_params) {
         def reportButtons = ''
 
         def reportMap = [
-            'gitleaks/gitleaks_report.html'                         : [ label: 'Gitleaks Security Report',     url: "${env.JENKINS_URL}job/${env.JOB_NAME}/Gitleaks_20Security_20Report/" ],
-            'trivy/trivy_report.html'                               : [ label: 'Trivy Image Scan Report',       url: "${env.JENKINS_URL}job/${env.JOB_NAME}/Trivy_20Image_20Scanning_20Report/" ],
-            'owasp-reports/owasp_report.html'                       : [ label: 'OWASP Dependency Check Report', url: "${env.JENKINS_URL}job/${env.JOB_NAME}/OWASP_20Dependency_20Check_20Report/" ],
-            'sdk-instacard-frontend/coverage/lcov-report/index.html': [ label: 'Unit Test Coverage Report',    url: "${env.JENKINS_URL}job/${env.JOB_NAME}/Unit_20Test_20Coverage_20Report/" ],
-            'sdk-instacard-frontend/coverage/index.html'            : [ label: 'Unit Test Coverage Report',    url: "${env.JENKINS_URL}job/${env.JOB_NAME}/Unit_20Test_20Coverage_20Report/" ],
-            'coverage/lcov-report/index.html'                       : [ label: 'Unit Test Coverage Report',    url: "${env.JENKINS_URL}job/${env.JOB_NAME}/Unit_20Test_20Coverage_20Report/" ],
-            'coverage/index.html'                                   : [ label: 'Unit Test Coverage Report',    url: "${env.JENKINS_URL}job/${env.JOB_NAME}/Unit_20Test_20Coverage_20Report/" ]
+            'gitleaks/gitleaks_report.html'   : [ label: 'Gitleaks Security Report',     url: "${env.JENKINS_URL}job/${env.JOB_NAME}/Gitleaks_20Security_20Report/" ],
+            'trivy/trivy_report.html'         : [ label: 'Trivy Image Scan Report',       url: "${env.JENKINS_URL}job/${env.JOB_NAME}/Trivy_20Image_20Scanning_20Report/" ],
+            'owasp-reports/owasp_report.html' : [ label: 'OWASP Dependency Check Report', url: "${env.JENKINS_URL}job/${env.JOB_NAME}/OWASP_20Dependency_20Check_20Report/" ],
+            'coverage/lcov-report/index.html' : [ label: 'Unit Test Coverage Report',    url: "${env.JENKINS_URL}job/${env.JOB_NAME}/Unit_20Test_20Coverage_20Report/" ],
+            'coverage/index.html'             : [ label: 'Unit Test Coverage Report',    url: "${env.JENKINS_URL}job/${env.JOB_NAME}/Unit_20Test_20Coverage_20Report/" ],
+            'target/site/jacoco/index.html'   : [ label: 'Unit Test Coverage Report',    url: "${env.JENKINS_URL}job/${env.JOB_NAME}/Unit_20Test_20Coverage_20Report/" ]
         ]
         reportMap.each { path, info ->
             if (fileExists(path)) {
@@ -182,13 +181,12 @@ def notification(Map step_params) {
         sh "mkdir -p ${attachDir}"
 
         def reportAttachMap = [
-            'gitleaks/gitleaks_report.html'                         : [ css: 'gitleaks/report.css',          name: 'Gitleaks_Security_Report' ],
-            'trivy/trivy_report.html'                               : [ css: 'trivy/report.css',              name: 'Trivy_Scan_Report' ],
-            'owasp-reports/owasp_report.html'                       : [ css: 'owasp-reports/report.css',     name: 'OWASP_Dependency_Report' ],
-            'sdk-instacard-frontend/coverage/lcov-report/index.html': [ css: '',                           name: 'UnitTest_Coverage_Report' ],
-            'sdk-instacard-frontend/coverage/index.html'            : [ css: '',                           name: 'UnitTest_Coverage_Report' ],
-            'coverage/lcov-report/index.html'                       : [ css: 'coverage/lcov-report/base.css', name: 'UnitTest_Coverage_Report' ],
-            'coverage/index.html'                                   : [ css: '',                             name: 'UnitTest_Coverage_Report' ]
+            'gitleaks/gitleaks_report.html'   : [ css: 'gitleaks/report.css',          name: 'Gitleaks_Security_Report' ],
+            'trivy/trivy_report.html'         : [ css: 'trivy/report.css',              name: 'Trivy_Scan_Report' ],
+            'owasp-reports/owasp_report.html' : [ css: 'owasp-reports/report.css',     name: 'OWASP_Dependency_Report' ],
+            'coverage/lcov-report/index.html' : [ css: 'coverage/lcov-report/base.css', name: 'UnitTest_Coverage_Report' ],
+            'coverage/index.html'             : [ css: '',                             name: 'UnitTest_Coverage_Report' ],
+            'target/site/jacoco/index.html'   : [ css: '',                             name: 'UnitTest_Coverage_Report' ]
         ]
 
         reportAttachMap.each { htmlPath, info ->
@@ -236,7 +234,7 @@ def notification(Map step_params) {
         def attachPattern = attachPaths.join(',')
 
 
-        def projectTitle = step_params.project_title ?: (env.JOB_NAME?.contains('HRC') || env.JOB_NAME?.contains('Non-Healthcare') ? 'HRC CI/CD Pipeline' : 'Montra CI/CD Pipeline')
+        def projectTitle = step_params.project_title ?: 'HRC CI/CD Pipeline'
         def deployDetails = step_params.deployment_details ?: [:]
         def deployRows = ''
         if (deployDetails instanceof Map && deployDetails.size() > 0) {
@@ -434,11 +432,11 @@ def notification(Map step_params) {
             [ text: ' View Build Logs', url: "${env.BUILD_URL}" ]
         ]
         def reportCheckMap = [
-            'gitleaks/gitleaks_report.html'                          : [ text: 'Gitleaks Report',  url: "${env.JENKINS_URL}job/${env.JOB_NAME}/Gitleaks_20Security_20Report/" ],
-            'trivy/trivy_report.html'                                : [ text: 'Trivy Scan',       url: "${env.JENKINS_URL}job/${env.JOB_NAME}/Trivy_20Image_20Scanning_20Report/" ],
-            'owasp-reports/owasp_report.html'                        : [ text: 'OWASP Report',     url: "${env.JENKINS_URL}job/${env.JOB_NAME}/OWASP_20Dependency_20Check_20Report/" ],
-            'sdk-instacard-frontend/coverage/lcov-report/index.html': [ text: 'Coverage Report',  url: "${env.JENKINS_URL}job/${env.JOB_NAME}/Unit_20Test_20Coverage_20Report/" ],
-            'coverage/lcov-report/index.html'                        : [ text: 'Coverage Report',  url: "${env.JENKINS_URL}job/${env.JOB_NAME}/Unit_20Test_20Coverage_20Report/" ]
+            'gitleaks/gitleaks_report.html'   : [ text: 'Gitleaks Report',  url: "${env.JENKINS_URL}job/${env.JOB_NAME}/Gitleaks_20Security_20Report/" ],
+            'trivy/trivy_report.html'         : [ text: 'Trivy Scan',       url: "${env.JENKINS_URL}job/${env.JOB_NAME}/Trivy_20Image_20Scanning_20Report/" ],
+            'owasp-reports/owasp_report.html' : [ text: 'OWASP Report',     url: "${env.JENKINS_URL}job/${env.JOB_NAME}/OWASP_20Dependency_20Check_20Report/" ],
+            'coverage/lcov-report/index.html' : [ text: 'Coverage Report',  url: "${env.JENKINS_URL}job/${env.JOB_NAME}/Unit_20Test_20Coverage_20Report/" ],
+            'target/site/jacoco/index.html'   : [ text: 'Coverage Report',  url: "${env.JENKINS_URL}job/${env.JOB_NAME}/Unit_20Test_20Coverage_20Report/" ]
         ]
         reportCheckMap.each { path, info ->
             if (fileExists(path)) { gchatButtons << info }
@@ -451,7 +449,7 @@ def notification(Map step_params) {
         def payload = """{
             "cards": [{
                 "header": {
-                    "title": "${statusEmoji} Montra ${pipelineType} Notification",
+                    "title": "${statusEmoji} HRC ${pipelineType} Notification",
                     "subtitle": "${env.JOB_NAME}",
                     "imageUrl": "https://www.jenkins.io/images/logos/jenkins/jenkins.png",
                     "imageStyle": "AVATAR"

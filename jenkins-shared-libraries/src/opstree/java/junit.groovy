@@ -34,11 +34,8 @@ def unit_test(Map step_params) {
 
     logger.logger('msg':"DEBUG build_tool=[${build_tool}] java_version=[${java_version}] fail_job=[${fail_job_if_unit_issue_detected}]", 'level':'INFO')
 
-    if (step_params.mvn_settings_path != null) {
-        mvn_settings_path = step_params.mvn_settings_path?.toString()
-    } else {
-        mvn_settings_path = '~/.m2/settings.xml'
-    }
+    def raw_settings = step_params.mvn_settings_path?.toString()?.trim()
+    def settingsArg = (raw_settings && raw_settings != 'null' && raw_settings != '') ? "-s /app/${raw_settings}" : ""
 
     repo_dir = parser.fetch_git_repo_name('repo_url':"${repo_url}")
 
@@ -46,18 +43,28 @@ def unit_test(Map step_params) {
         if (fail_job_if_unit_issue_detected == 'false') {
             if (build_tool == 'maven') {
                 try {
-                    withMaven(globalMavenSettingsConfig: '', jdk: "${withmaven_globaltool_jdk}", maven: "${withmaven_globaltool_maven}", mavenSettingsConfig: '') {
-                        if (java_version == '11') {
-                            sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.8.6-jdk-11 bash -c 'cd /app/${pom_location} && mvn test -s /app/${mvn_settings_path} -Dmaven.wagon.http.ssl.insecure=true jacoco:report' """
-                        } else if (java_version == '17') {
-                            sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.8.3-openjdk-17 bash -c 'cd /app/${pom_location} && mvn test -s /app/${mvn_settings_path} -Dmaven.wagon.http.ssl.insecure=true jacoco:report' """
-                        } else if (java_version == '8') {
-                            sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.3-jdk-8 bash -c 'cd /app/${pom_location} && mvn test -s /app/${mvn_settings_path} -Dmaven.wagon.http.ssl.insecure=true jacoco:report' """
-                        }
-                        reports_manager.publish_static_code_analysis_issues(unit_test_reports_path: "${unit_test_reports_path}", findbugs_test_report_path: "${findbugs_test_report_path}")
+                    if (java_version == '11') {
+                        sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.8.6-jdk-11 bash -c 'cd /app/${pom_location} && mvn test ${settingsArg} -Dmaven.wagon.http.ssl.insecure=true ; (mvn org.jacoco:jacoco-maven-plugin:0.8.11:report || true)' """
+                    } else if (java_version == '17') {
+                        sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.8.3-openjdk-17 bash -c 'cd /app/${pom_location} && mvn test ${settingsArg} -Dmaven.wagon.http.ssl.insecure=true ; (mvn org.jacoco:jacoco-maven-plugin:0.8.11:report || true)' """
+                    } else if (java_version == '8') {
+                        sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.3-jdk-8 bash -c 'cd /app/${pom_location} && mvn test ${settingsArg} -Dmaven.wagon.http.ssl.insecure=true ; (mvn org.jacoco:jacoco-maven-plugin:0.8.11:report || true)' """
+                    }
+                    reports_manager.publish_static_code_analysis_issues(unit_test_reports_path: "${unit_test_reports_path}", findbugs_test_report_path: "${findbugs_test_report_path}")
+                    
+                    if (fileExists("${WORKSPACE}/${repo_dir}/target/site/jacoco/index.html")) {
+                        publishHTML([
+                            allowMissing: true,
+                            alwaysLinkToLastBuild: true,
+                            keepAll: true,
+                            reportDir: "${WORKSPACE}/${repo_dir}/target/site/jacoco",
+                            reportFiles: 'index.html',
+                            reportName: 'Unit Test Coverage Report',
+                            reportTitles: 'Unit Test Coverage'
+                        ])
                     }
                 } catch (Exception e) {
-                    logger.logger('msg':'Unit Test found Issues!! Ignoring as per User inputs', 'level':'WARN')
+                    logger.logger('msg':"Unit Test found Issues!! Ignoring as per User inputs: ${e}", 'level':'WARN')
                 }
             } else if (build_tool == 'gradle') {
                 try {
@@ -86,15 +93,25 @@ def unit_test(Map step_params) {
         } else {
             if (build_tool == 'maven') {
                 try {
-                    withMaven(globalMavenSettingsConfig: '', jdk: "${withmaven_globaltool_jdk}", maven: "${withmaven_globaltool_maven}", mavenSettingsConfig: '') {
-                        if (java_version == '11') {
-                            sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.8.6-jdk-11 bash -c 'cd /app/${pom_location} && mvn test -s /app/${mvn_settings_path} -Dmaven.wagon.http.ssl.insecure=true jacoco:report' """
-                        } else if (java_version == '17') {
-                            sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.8.3-openjdk-17 bash -c 'cd /app/${pom_location} && mvn test -s /app/${mvn_settings_path} -Dmaven.wagon.http.ssl.insecure=true jacoco:report' """
-                        } else if (java_version == '8') {
-                            sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.3-jdk-8 bash -c 'cd /app/${pom_location} && mvn test -s /app/${mvn_settings_path} -Dmaven.wagon.http.ssl.insecure=true jacoco:report' """
-                        }
-                        reports_manager.publish_static_code_analysis_issues(unit_test_reports_path: "${unit_test_reports_path}", findbugs_test_report_path: "${findbugs_test_report_path}")
+                    if (java_version == '11') {
+                        sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.8.6-jdk-11 bash -c 'cd /app/${pom_location} && mvn test ${settingsArg} -Dmaven.wagon.http.ssl.insecure=true ; (mvn org.jacoco:jacoco-maven-plugin:0.8.11:report || true)' """
+                    } else if (java_version == '17') {
+                        sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.8.3-openjdk-17 bash -c 'cd /app/${pom_location} && mvn test ${settingsArg} -Dmaven.wagon.http.ssl.insecure=true ; (mvn org.jacoco:jacoco-maven-plugin:0.8.11:report || true)' """
+                    } else if (java_version == '8') {
+                        sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.3-jdk-8 bash -c 'cd /app/${pom_location} && mvn test ${settingsArg} -Dmaven.wagon.http.ssl.insecure=true ; (mvn org.jacoco:jacoco-maven-plugin:0.8.11:report || true)' """
+                    }
+                    reports_manager.publish_static_code_analysis_issues(unit_test_reports_path: "${unit_test_reports_path}", findbugs_test_report_path: "${findbugs_test_report_path}")
+                    
+                    if (fileExists("${WORKSPACE}/${repo_dir}/target/site/jacoco/index.html")) {
+                        publishHTML([
+                            allowMissing: true,
+                            alwaysLinkToLastBuild: true,
+                            keepAll: true,
+                            reportDir: "${WORKSPACE}/${repo_dir}/target/site/jacoco",
+                            reportFiles: 'index.html',
+                            reportName: 'Unit Test Coverage Report',
+                            reportTitles: 'Unit Test Coverage'
+                        ])
                     }
                 } catch (Exception e) {
                     logger.logger('msg':"Unit Test Failed Error Details: ${e}", 'level':'ERROR')

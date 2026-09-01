@@ -101,9 +101,9 @@ def unit_test(Map step_params) {
 
             // Publish HTML coverage report if generated (use relative path from current dir)
             if (fileExists("coverage/lcov-report/index.html")) {
-                publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'coverage/lcov-report', reportFiles: 'index.html', reportName: 'Unit Test Coverage Report', reportTitles: '', useWrapperFileDirectly: true])
+                publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: 'coverage/lcov-report', reportFiles: 'index.html', reportName: 'Unit Test Coverage Report', reportTitles: 'Unit Test Coverage', useWrapperFileDirectly: true])
             } else if (fileExists("coverage/index.html")) {
-                publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'coverage', reportFiles: 'index.html', reportName: 'Unit Test Coverage Report', reportTitles: '', useWrapperFileDirectly: true])
+                publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: 'coverage', reportFiles: 'index.html', reportName: 'Unit Test Coverage Report', reportTitles: 'Unit Test Coverage', useWrapperFileDirectly: true])
             }
         }
         catch (Exception e) {
@@ -113,9 +113,9 @@ def unit_test(Map step_params) {
             try {
                 reports_manager.publish_static_code_analysis_issues(unit_test_reports_path: reports_pattern, findbugs_test_report_path: "${findbugs_pattern}")
                 if (fileExists("coverage/lcov-report/index.html")) {
-                    publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'coverage/lcov-report', reportFiles: 'index.html', reportName: 'Unit Test Coverage Report', reportTitles: '', useWrapperFileDirectly: true])
+                    publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: 'coverage/lcov-report', reportFiles: 'index.html', reportName: 'Unit Test Coverage Report', reportTitles: 'Unit Test Coverage', useWrapperFileDirectly: true])
                 } else if (fileExists("coverage/index.html")) {
-                    publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'coverage', reportFiles: 'index.html', reportName: 'Unit Test Coverage Report', reportTitles: '', useWrapperFileDirectly: true])
+                    publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: 'coverage', reportFiles: 'index.html', reportName: 'Unit Test Coverage Report', reportTitles: 'Unit Test Coverage', useWrapperFileDirectly: true])
                 }
             } catch (ignored) {}
 

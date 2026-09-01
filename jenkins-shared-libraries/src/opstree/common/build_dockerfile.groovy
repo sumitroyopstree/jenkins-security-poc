@@ -61,6 +61,31 @@ def build_dockerfile(Map step_params) {
     def build_secret_env_var = (raw_secret_env_var && raw_secret_env_var != 'null') ? raw_secret_env_var : 'azure_face_api_key'
 
     dir("${buildDir}") {
+        if (app_stack == 'java') {
+            def currentEnvName = (step_params.environment ?: env.ENVIRONMENT ?: 'dev').toLowerCase()
+            sh """
+                # 1. Stage compiled JAR for Dockerfile
+                TARGET_DIR="${buildDir}/target"
+                if [ -d "\$TARGET_DIR" ]; then
+                    BUILT_JAR=\$(find \$TARGET_DIR -maxdepth 1 -name '*.jar' ! -name '*-sources.jar' ! -name 'original-*.jar' 2>/dev/null | head -1)
+                    if [ -n "\$BUILT_JAR" ] && [ -f "${dockerfile_location}" ]; then
+                        EXPECTED_JARS=\$(grep -oE 'COPY\\s+target/[^\\s]+\\.jar' "${dockerfile_location}" 2>/dev/null | awk -F'/' '{print \$2}' | sort -u)
+                        for jar_name in \$EXPECTED_JARS; do
+                            if [ -n "\$jar_name" ]; then
+                                echo "Ensuring required JAR exists for Dockerfile: \$jar_name"
+                                cp -f "\$BUILT_JAR" "\$TARGET_DIR/\$jar_name" 2>/dev/null || true
+                            fi
+                        done
+                    fi
+                fi
+
+                # 2. Replace APP_ENV in Dockerfile if placeholder exists
+                if [ -f "${dockerfile_location}" ]; then
+                    sed -i "s/APP_ENV/${currentEnvName}/g" "${dockerfile_location}" 2>/dev/null || true
+                fi
+            """
+        }
+
         if (build_secret_creds_id) {
             // Pass Jenkins credential to Docker via BuildKit secret mount (id=AZURE_FACE_API_KEY)
             withCredentials([string(credentialsId: build_secret_creds_id, variable: 'THE_SECRET')]) {

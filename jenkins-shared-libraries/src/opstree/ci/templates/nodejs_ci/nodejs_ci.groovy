@@ -645,10 +645,13 @@ def call(Map step_params) {
                 def deploy_artifact = env.GENERATED_ARTIFACT_NAME ?: docker_image_tag
                 def param_name = get_params_value(enableOverride, step_params, 'image_tag_build_param') ?: 'artifact_name'
 
+                def targetDeployEnv = "${params.ENVIRONMENT ?: get_params_value(enableOverride, step_params, 'environment') ?: 'TEST'}".toUpperCase()
+
                 build job: get_params_value(enableOverride, step_params, 'trigger_cd_pipeline_path'),
                     parameters: [
                         string(name: param_name, value: deploy_artifact),
-                        string(name: 'BRANCH', value: "${get_params_value(enableOverride, step_params, 'repo_branch') ?: 'main'}")
+                        string(name: 'BRANCH', value: "${get_params_value(enableOverride, step_params, 'repo_branch') ?: 'main'}"),
+                        string(name: 'ENVIRONMENT', value: targetDeployEnv)
                     ], 
                     wait: false
             }
