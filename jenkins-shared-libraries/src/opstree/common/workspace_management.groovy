@@ -25,20 +25,32 @@ def workspace_management(Map step_params) {
                 cleanWhenUnstable: params.clean_when_build_unstable.toBoolean()
             )
         def workspace = env.WORKSPACE
-        if (fileExists("${workspace}@tmp")) {
-            dir("${workspace}@tmp") {
+        try {
+            if (fileExists("${workspace}@tmp")) {
+                dir("${workspace}@tmp") {
                     deleteDir()
+                }
             }
+        } catch (Exception e) {
+            logger.logger('msg':"Warning deleting @tmp: ${e.message}", 'level':'WARN')
         }
-        if (fileExists("${workspace}@script")) {
-            dir("${workspace}@script") {
+        try {
+            if (fileExists("${workspace}@script")) {
+                dir("${workspace}@script") {
                     deleteDir()
+                }
             }
+        } catch (Exception e) {
+            logger.logger('msg':"Warning deleting @script: ${e.message}", 'level':'WARN')
         }
-        if (fileExists("${workspace}@libs")) {
-            dir("${workspace}@libs") {
+        try {
+            if (fileExists("${workspace}@libs")) {
+                dir("${workspace}@libs") {
                     deleteDir()
+                }
             }
+        } catch (Exception e) {
+            logger.logger('msg':"Warning deleting @libs: ${e.message}", 'level':'WARN')
         }
         logger.logger('msg':'Cleanws Completed', 'level':'INFO')
         } else {

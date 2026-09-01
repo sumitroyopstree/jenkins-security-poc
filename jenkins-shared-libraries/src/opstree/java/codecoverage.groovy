@@ -34,21 +34,19 @@ def code_coverage(Map step_params) {
     try {
         dir("${WORKSPACE}/${repo_dir}") {
             if (build_tool == 'maven') {
-                withMaven(globalMavenSettingsConfig: '', jdk: "${withmaven_globaltool_jdk}", maven: "${withmaven_globaltool_maven}", mavenSettingsConfig: '') {
-                    // Construct Docker image tag based on Maven version and Java version
-                    docker_image = 'maven:3.8.6-jdk-11'
+                // Construct Docker image tag based on Maven version and Java version
+                docker_image = 'maven:3.8.6-jdk-11'
 
-                    // Run Maven clean package and test inside Docker
-                    sh """
-                        docker run --rm \
-                            -v ${WORKSPACE}/${repo_dir}:/app \
-                            -v ${WORKSPACE}/${repo_dir}/target:/app/target \
-                            -w /app \
-                            ${docker_image} \
-                            sh -c "mvn test jacoco:report"
-                    """
-                    logger.logger('msg':'Code coverage successful', 'level':'INFO')
-                }
+                // Run Maven clean package and test inside Docker
+                sh """
+                    docker run --rm \
+                        -v ${WORKSPACE}/${repo_dir}:/app \
+                        -v ${WORKSPACE}/${repo_dir}/target:/app/target \
+                        -w /app \
+                        ${docker_image} \
+                        sh -c "mvn test jacoco:report"
+                """
+                logger.logger('msg':'Code coverage successful', 'level':'INFO')
             } else {
                 logger.logger('msg':'Choose appropriate Coverage tool !!! TEST Failed Error Details: Invalid Code overage tool specified.', 'level':'ERROR')
                 error('Invalid Code overage tool specified.')
