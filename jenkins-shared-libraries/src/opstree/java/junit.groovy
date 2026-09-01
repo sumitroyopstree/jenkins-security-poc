@@ -28,8 +28,8 @@ def unit_test(Map step_params) {
     findbugs_test_report_path       = step_params.findbugs_test_report_path?.toString()
     withmaven_globaltool_jdk        = step_params.withmaven_globaltool_jdk?.toString()
     withmaven_globaltool_maven      = step_params.withmaven_globaltool_maven?.toString()
-    source_code_path                = step_params.source_code_path?.toString()
-    pom_location                    = step_params.pom_location?.toString()
+    def raw_pom_loc                 = step_params.pom_location?.toString()?.trim()
+    pom_location                    = (raw_pom_loc && raw_pom_loc != 'null') ? raw_pom_loc : ''
     java_version                    = step_params.java_version?.toString()
 
     logger.logger('msg':"DEBUG build_tool=[${build_tool}] java_version=[${java_version}] fail_job=[${fail_job_if_unit_issue_detected}]", 'level':'INFO')

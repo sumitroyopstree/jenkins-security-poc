@@ -267,7 +267,8 @@ def build_artifact(Map step_params) {
     def codeartifact_dependency = "${step_params.codeartifact_dependency}"
     def codeartifact_domain = "${step_params.codeartifact_domain}"
     def codeartifact_owner = "${step_params.codeartifact_owner}"
-    def pom_location = step_params.pom_location ?: ''
+    def raw_pom = step_params.pom_location?.toString()?.trim()
+    def pom_location = (raw_pom && raw_pom != 'null') ? raw_pom : ''
     def java_version = step_params.java_version ?: '17'
     def artifact_jar_name = step_params.artifact_jar_name ?: 'kollect-APP_VERSION.jar'
     def gradle_command = "${step_params.gradle_command}"
