@@ -563,7 +563,6 @@
 //         }
 //     }
 // }
-
 package opstree.cd.templates.ssh_pm2
 
 import opstree.common.*
@@ -613,7 +612,7 @@ def call(Map step_params) {
         def start_command         = get_params_value(enableOverride, step_params, 'start_command') ?: 'dist/main.js'
         def health_check_endpoint = get_params_value(enableOverride, step_params, 'health_check_endpoint') ?: 'http://127.0.0.1:3200/api-v2/healthcheck'
 
-        // S3 Tarball parameters
+        // S3 Tarball resolution (supports artifact_name and image_tag)
         def s3_bucket     = get_params_value(enableOverride, step_params, 'artifact_s3_bucket_name') ?: 'hrc-cicd-test-bucket'
         def s3_keypath    = get_params_value(enableOverride, step_params, 'artifact_s3_keypath_destination') ?: 'backend'
         def artifact_name = get_params_value(enableOverride, step_params, 'artifact_name') ?: get_params_value(enableOverride, step_params, 'image_tag') ?: ''
@@ -715,15 +714,32 @@ EOF
                             echo "SECRET_KEY_MANAGER_KEY=${secret_arn}" >> .env
                             echo "SECRET_KEY_MANAGER_REGION=${secret_region}" >> .env
 
-                            # Fetch Secrets JSON from AWS Secrets Manager directly into .env
+                            # Try extracting secrets JSON via jq, fallback to Node.js
                             if command -v jq >/dev/null 2>&1; then
                                 echo "Exporting Secrets Manager variables to .env via jq..."
                                 aws secretsmanager get-secret-value --secret-id "${secret_arn}" --region "${secret_region}" --query 'SecretString' --output text 2>/dev/null | jq -r 'to_entries|map("\\(.key)=\\(.value|tostring)")|.[]' >> .env || true
+                            else
+                                echo "Exporting Secrets Manager variables to .env via Node.js..."
+                                node -e '
+                                    const { execSync } = require("child_process");
+                                    const fs = require("fs");
+                                    try {
+                                        const raw = execSync("aws secretsmanager get-secret-value --secret-id \\"${secret_arn}\\" --region \\"${secret_region}\\" --query SecretString --output text", { encoding: "utf8" });
+                                        const parsed = JSON.parse(raw.trim());
+                                        let out = "";
+                                        for (const [k, v] of Object.entries(parsed)) {
+                                            out += `\${k}=\${v}\\n`;
+                                        }
+                                        fs.appendFileSync(".env", out);
+                                    } catch (e) {
+                                        console.warn("Secret parser warning: " + e.message);
+                                    }
+                                ' || true
                             fi
                         """
                     }
 
-                    // Append any extra key-values
+                    // Append extra explicit variables
                     if (extra_env_vars) {
                         extra_env_vars.each { k, v ->
                             deployScript += """
@@ -733,7 +749,7 @@ EOF
                     }
 
                     deployScript += """
-                        # Execute fetchSecrets.js if application uses internal secrets manager fetching
+                        # Execute fetchSecrets.js if application requires pre-boot secrets processing
                         if [ -f "fetchSecrets.js" ]; then
                             echo "Running fetchSecrets.js..."
                             node fetchSecrets.js || true
@@ -784,7 +800,6 @@ EOF
                             echo "SUCCESS: ${app_name} is running and reachable (HTTP \$HTTP_STATUS)."
                             echo "=========================================================="
                             rm -rf dist.bak
-                            rm -f /tmp/${app_name}.env.bak
                         else
                             echo "=========================================================="
                             echo "[ERROR] Health check failed! (HTTP Status: \$HTTP_STATUS)"
