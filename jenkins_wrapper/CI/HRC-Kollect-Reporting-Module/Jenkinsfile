@@ -46,9 +46,9 @@ node('HRC-Kollect-Jenkins-Agent') {
         nvd_api_key_creds_id                      : 'NVD_API_KEY',
 
         // UNIT TESTING
-        unit_testing_check               : 'false',
+        unit_testing_check               : 'true',
         fail_job_if_unit_issue_detected  : 'false',
-        unit_test_reports_path           : '**/junit*.xml',
+        unit_test_reports_path           : '**/target/surefire-reports/*.xml',
 
         // CODE BUILD CONFIGURATION
         perform_code_build               : true,
