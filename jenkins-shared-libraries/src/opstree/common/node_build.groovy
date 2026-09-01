@@ -2122,7 +2122,7 @@ echo "========================================"
 ${build_command}
 
 ACTUAL_OUTPUT="${build_output_path}"
-if [ ! -e "$ACTUAL_OUTPUT" ]; then
+if [ ! -e "\${ACTUAL_OUTPUT}" ]; then
     if [ -d ".next" ]; then
         echo "Auto-detected Next.js build output directory: .next"
         ACTUAL_OUTPUT=".next"
