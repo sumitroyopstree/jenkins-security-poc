@@ -69,7 +69,7 @@ def build_dockerfile(Map step_params) {
                 if [ -d "\$TARGET_DIR" ]; then
                     BUILT_JAR=\$(find \$TARGET_DIR -maxdepth 1 -name '*.jar' ! -name '*-sources.jar' ! -name 'original-*.jar' 2>/dev/null | head -1)
                     if [ -n "\$BUILT_JAR" ] && [ -f "${dockerfile_location}" ]; then
-                        EXPECTED_JARS=\$(grep -oE 'COPY\\s+target/[^\\s]+\\.jar' "${dockerfile_location}" 2>/dev/null | awk -F'/' '{print \$2}' | sort -u)
+                        EXPECTED_JARS=\$(grep 'COPY' "${dockerfile_location}" 2>/dev/null | grep -o 'target/[^ ]*\\.jar' | awk -F'/' '{print \$2}' | sort -u)
                         for jar_name in \$EXPECTED_JARS; do
                             if [ -n "\$jar_name" ]; then
                                 echo "Ensuring required JAR exists for Dockerfile: \$jar_name"
