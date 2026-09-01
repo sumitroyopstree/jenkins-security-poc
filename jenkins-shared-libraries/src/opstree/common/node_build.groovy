@@ -1959,8 +1959,26 @@ def build_and_package_node(Map step_params) {
     def source_code_path = step_params.source_code_path?.toString()?.trim() ?: ''
     def node_version = step_params.node_version?.toString()?.trim() ?: '18'
     def package_manager = step_params.package_manager?.toString()?.trim()?.toLowerCase() ?: 'yarn'
-    def app_name = step_params.app_name?.toString()?.trim() ?: 'node-app'
-    def build_output_path = step_params.build_output_path?.toString()?.trim() ?: 'dist'
+    // Auto-derive app_name from repo URL if not explicitly provided
+    // e.g. https://gitlab.../hrc/kollect-client-billing-frontend.git → 'kollect-client-billing-frontend'
+    def _repoBasename = repo_url ? repo_url.replaceAll('.*/([^/]+?)(\.git)?$', '$1') : 'node-app'
+    def app_name = step_params.app_name?.toString()?.trim() ?: _repoBasename
+    // =========================================================
+    // NEXT.JS AUTO-DETECTION
+    // If build_output_path is not explicitly passed, detect from project files:
+    //   - next.config.js / next.config.ts / next.config.mjs  → Next.js → '.next'
+    //   - otherwise default to 'dist'
+    // =========================================================
+    def _isNextJs = (
+        step_params.build_output_path == null ||
+        step_params.build_output_path?.toString()?.trim() == '' ||
+        step_params.build_output_path?.toString()?.trim()?.equalsIgnoreCase('null')
+    ) && (
+        fileExists("${step_params.source_code_path ? step_params.source_code_path + '/' : ''}next.config.js") ||
+        fileExists("${step_params.source_code_path ? step_params.source_code_path + '/' : ''}next.config.ts") ||
+        fileExists("${step_params.source_code_path ? step_params.source_code_path + '/' : ''}next.config.mjs")
+    )
+    def build_output_path = step_params.build_output_path?.toString()?.trim() ?: (_isNextJs ? '.next' : 'dist')
 
     // =========================================================
     // BASIC VALIDATION
@@ -2003,7 +2021,7 @@ def build_and_package_node(Map step_params) {
         include_node_modules = step_params.include_node_modules == true || step_params.include_node_modules?.toString()?.equalsIgnoreCase('true')
     }
 
-    def prune_dev_dependencies = true
+    def prune_dev_dependencies = false
     if (step_params.containsKey('prune_dev_dependencies')) {
         prune_dev_dependencies = step_params.prune_dev_dependencies == true || step_params.prune_dev_dependencies?.toString()?.equalsIgnoreCase('true')
     }
@@ -2204,9 +2222,16 @@ echo "Artifact Created Successfully: \$(ls -lh ${shellQuote("/output/${artifact_
         try {
             sh """
                 set -e
+                # Create persistent cache dirs on host (survive between builds)
+                mkdir -p /var/lib/jenkins/.yarn-cache
+                mkdir -p /var/lib/jenkins/.nextjs-cache/${safe_app_name}
+
                 docker run --rm \\
                     -v ${shellQuote("${project_path}:/app")} \\
                     -v ${shellQuote("${artifact_dir}:/output")} \\
+                    -v /var/lib/jenkins/.yarn-cache:/root/.yarn \\
+                    -v /var/lib/jenkins/.nextjs-cache/${safe_app_name}:/app/.next/cache \\
+                    -e YARN_CACHE_FOLDER=/root/.yarn \\
                     -w /app \\
                     ${shellQuote("node:${node_version}")} \\
                     sh /output/node_build.sh
