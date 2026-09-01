@@ -76,14 +76,14 @@ def sonar(Map step_params) {
                             withSonarQubeEnv('SonarQube') {
                                 sh "${docker_cmd}"
                                 logger.logger('msg':'Static Code Analysis Scanning Complete', 'level':'INFO')
-                            }
-                            sleep(10)
-                            timeout(time: 1, unit: 'MINUTES') {
-                                dir("${WORKSPACE}/${repo_dir}") {
-                                    def qg = waitForQualityGate()
-                                    echo 'Finished waiting'
-                                    if (qg.status != 'OK') {
-                                        logger.logger('msg': "Pipeline aborted due to quality gate failure: ${qg.status}. But Ignoring as per User input", 'level':'WARN')
+                                sleep(5)
+                                timeout(time: 2, unit: 'MINUTES') {
+                                    dir("${WORKSPACE}/${repo_dir}") {
+                                        def qg = waitForQualityGate()
+                                        echo "Finished waiting. Quality Gate Status: ${qg.status}"
+                                        if (qg.status != 'OK') {
+                                            logger.logger('msg': "Pipeline aborted due to quality gate failure: ${qg.status}. But Ignoring as per User input", 'level':'WARN')
+                                        }
                                     }
                                 }
                             }
@@ -99,15 +99,15 @@ def sonar(Map step_params) {
                             withSonarQubeEnv('SonarQube') {
                                 sh "${docker_cmd}"
                                 logger.logger('msg':'Static Code Analysis Scanning Complete', 'level':'INFO')
-                            }
-                            sleep(10)
-                            timeout(time: 1, unit: 'MINUTES') {
-                                dir("${WORKSPACE}/${repo_dir}") {
-                                    def qg = waitForQualityGate()
-                                    echo 'Finished waiting'
-                                    if (qg.status != 'OK') {
-                                        logger.logger('msg': "Pipeline aborted due to quality gate failure: ${qg.status}.", 'level':'ERROR')
-                                        error("Quality gate failure: ${qg.status}")
+                                sleep(5)
+                                timeout(time: 2, unit: 'MINUTES') {
+                                    dir("${WORKSPACE}/${repo_dir}") {
+                                        def qg = waitForQualityGate()
+                                        echo "Finished waiting. Quality Gate Status: ${qg.status}"
+                                        if (qg.status != 'OK') {
+                                            logger.logger('msg': "Pipeline aborted due to quality gate failure: ${qg.status}.", 'level':'ERROR')
+                                            error("Quality gate failure: ${qg.status}")
+                                        }
                                     }
                                 }
                             }
