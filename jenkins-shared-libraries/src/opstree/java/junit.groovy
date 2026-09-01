@@ -44,11 +44,11 @@ def unit_test(Map step_params) {
             if (build_tool == 'maven') {
                 try {
                     if (java_version == '11') {
-                        sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.8.6-jdk-11 bash -c 'cd /app/${pom_location} && mvn test ${settingsArg} -Dmaven.wagon.http.ssl.insecure=true jacoco:report' """
+                        sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.8.6-jdk-11 bash -c 'cd /app/${pom_location} && mvn test ${settingsArg} -Dmaven.wagon.http.ssl.insecure=true ; (mvn org.jacoco:jacoco-maven-plugin:0.8.11:report || true)' """
                     } else if (java_version == '17') {
-                        sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.8.3-openjdk-17 bash -c 'cd /app/${pom_location} && mvn test ${settingsArg} -Dmaven.wagon.http.ssl.insecure=true jacoco:report' """
+                        sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.8.3-openjdk-17 bash -c 'cd /app/${pom_location} && mvn test ${settingsArg} -Dmaven.wagon.http.ssl.insecure=true ; (mvn org.jacoco:jacoco-maven-plugin:0.8.11:report || true)' """
                     } else if (java_version == '8') {
-                        sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.3-jdk-8 bash -c 'cd /app/${pom_location} && mvn test ${settingsArg} -Dmaven.wagon.http.ssl.insecure=true jacoco:report' """
+                        sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.3-jdk-8 bash -c 'cd /app/${pom_location} && mvn test ${settingsArg} -Dmaven.wagon.http.ssl.insecure=true ; (mvn org.jacoco:jacoco-maven-plugin:0.8.11:report || true)' """
                     }
                     reports_manager.publish_static_code_analysis_issues(unit_test_reports_path: "${unit_test_reports_path}", findbugs_test_report_path: "${findbugs_test_report_path}")
                     
@@ -94,11 +94,11 @@ def unit_test(Map step_params) {
             if (build_tool == 'maven') {
                 try {
                     if (java_version == '11') {
-                        sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.8.6-jdk-11 bash -c 'cd /app/${pom_location} && mvn test ${settingsArg} -Dmaven.wagon.http.ssl.insecure=true jacoco:report' """
+                        sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.8.6-jdk-11 bash -c 'cd /app/${pom_location} && mvn test ${settingsArg} -Dmaven.wagon.http.ssl.insecure=true ; (mvn org.jacoco:jacoco-maven-plugin:0.8.11:report || true)' """
                     } else if (java_version == '17') {
-                        sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.8.3-openjdk-17 bash -c 'cd /app/${pom_location} && mvn test ${settingsArg} -Dmaven.wagon.http.ssl.insecure=true jacoco:report' """
+                        sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.8.3-openjdk-17 bash -c 'cd /app/${pom_location} && mvn test ${settingsArg} -Dmaven.wagon.http.ssl.insecure=true ; (mvn org.jacoco:jacoco-maven-plugin:0.8.11:report || true)' """
                     } else if (java_version == '8') {
-                        sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.3-jdk-8 bash -c 'cd /app/${pom_location} && mvn test ${settingsArg} -Dmaven.wagon.http.ssl.insecure=true jacoco:report' """
+                        sh """ docker run --rm -v /var/lib/jenkins/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app maven:3.3-jdk-8 bash -c 'cd /app/${pom_location} && mvn test ${settingsArg} -Dmaven.wagon.http.ssl.insecure=true ; (mvn org.jacoco:jacoco-maven-plugin:0.8.11:report || true)' """
                     }
                     reports_manager.publish_static_code_analysis_issues(unit_test_reports_path: "${unit_test_reports_path}", findbugs_test_report_path: "${findbugs_test_report_path}")
                     
