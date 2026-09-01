@@ -2077,13 +2077,13 @@ def build_and_package_node(Map step_params) {
     def prune_command = ''
 
     if (package_manager == 'yarn') {
-        install_command = 'yarn install'
+        install_command = 'yarn install --prefer-offline'
         if (prune_dev_dependencies) {
             // Corrected: --production=true retains dependencies and strips devDependencies
             prune_command = 'yarn install --production=true --ignore-scripts --prefer-offline'
         }
     } else {
-        install_command = 'npm install'
+        install_command = 'npm install --prefer-offline'
         if (prune_dev_dependencies) {
             prune_command = 'npm prune --omit=dev'
         }
