@@ -507,12 +507,21 @@ def publish_artifact(Map step_params) {
             ).trim()
 
             // ECR can also use IAM role if no credentialsId is provided
-            if (jenkins_aws_credentials_id && jenkins_aws_credentials_id != 'null' && jenkins_aws_credentials_id != '') {
-                withCredentials([usernamePassword(
-                    credentialsId: jenkins_aws_credentials_id,
-                    usernameVariable: 'AWS_ACCESS_KEY_ID',
-                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                )]) {
+            try {
+                if (jenkins_aws_credentials_id && jenkins_aws_credentials_id != 'null' && jenkins_aws_credentials_id != '') {
+                    withCredentials([usernamePassword(
+                        credentialsId: jenkins_aws_credentials_id,
+                        usernameVariable: 'AWS_ACCESS_KEY_ID',
+                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                    )]) {
+                        sh """
+                            docker tag $docker_image_name:$docker_image_tag ${account_id}.dkr.ecr.${ecr_region}.amazonaws.com/$ecr_repo_name:$docker_image_tag
+                            aws ecr get-login-password --region $ecr_region | docker login --username AWS --password-stdin ${account_id}.dkr.ecr.${ecr_region}.amazonaws.com
+                            docker push ${account_id}.dkr.ecr.${ecr_region}.amazonaws.com/$ecr_repo_name:$docker_image_tag
+                            docker rmi -f $docker_image_name:$docker_image_tag ${account_id}.dkr.ecr.${ecr_region}.amazonaws.com/$ecr_repo_name:$docker_image_tag
+                        """
+                    }
+                } else {
                     sh """
                         docker tag $docker_image_name:$docker_image_tag ${account_id}.dkr.ecr.${ecr_region}.amazonaws.com/$ecr_repo_name:$docker_image_tag
                         aws ecr get-login-password --region $ecr_region | docker login --username AWS --password-stdin ${account_id}.dkr.ecr.${ecr_region}.amazonaws.com
@@ -520,7 +529,8 @@ def publish_artifact(Map step_params) {
                         docker rmi -f $docker_image_name:$docker_image_tag ${account_id}.dkr.ecr.${ecr_region}.amazonaws.com/$ecr_repo_name:$docker_image_tag
                     """
                 }
-            } else {
+            } catch (Exception credErr) {
+                logger.logger('msg':"AWS Credentials binding skipped (${credErr.message}), falling back to EC2 IAM Role for ECR...", 'level':'WARN')
                 sh """
                     docker tag $docker_image_name:$docker_image_tag ${account_id}.dkr.ecr.${ecr_region}.amazonaws.com/$ecr_repo_name:$docker_image_tag
                     aws ecr get-login-password --region $ecr_region | docker login --username AWS --password-stdin ${account_id}.dkr.ecr.${ecr_region}.amazonaws.com
