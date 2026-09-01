@@ -2223,8 +2223,9 @@ echo "Artifact Created Successfully: \$(ls -lh ${shellQuote("/output/${artifact_
             sh """
                 set -e
                 # Create persistent cache dirs on host (survive between builds)
-                mkdir -p /var/lib/jenkins/.yarn-cache
-                mkdir -p /var/lib/jenkins/.nextjs-cache/${safe_app_name}
+                sudo mkdir -p /var/lib/jenkins/.yarn-cache
+                sudo mkdir -p /var/lib/jenkins/.nextjs-cache/${safe_app_name}
+                sudo chmod -R 777 /var/lib/jenkins/.yarn-cache /var/lib/jenkins/.nextjs-cache || true
 
                 docker run --rm \\
                     -v ${shellQuote("${project_path}:/app")} \\
