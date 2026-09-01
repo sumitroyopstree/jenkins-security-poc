@@ -499,25 +499,23 @@ def call(Map step_params) {
             }
 
             if (get_params_value(enableOverride, step_params, 'static_code_analysis_check') != null && get_params_value(enableOverride, step_params, 'static_code_analysis_check').toBoolean()) {
-                stage('Static Code Analysis') {
-                    static_code_analysis.static_code_analysis_factory(
-                        repo_url: "${repo_url}",
-                        repo_url_type: "${get_params_value(enableOverride, step_params, 'repo_url_type')}",
-                        codebase_to_scan_directory: "${get_params_value(enableOverride, step_params, 'codebase_to_scan_directory')}",
-                        static_code_analysis_check: "${get_params_value(enableOverride, step_params, 'static_code_analysis_check')}",
-                        sonar_project_key: "${get_params_value(enableOverride, step_params, 'sonar_project_key')}",
-                        sonar_project_name: "${get_params_value(enableOverride, step_params, 'sonar_project_name')}",
-                        sonar_sources: "${get_params_value(enableOverride, step_params, 'sonar_sources')}",
-                        sonar_host_url: "${get_params_value(enableOverride, step_params, 'sonar_host_url')}",
-                        sonar_extra_args: "${get_params_value(enableOverride, step_params, 'sonar_extra_args')}",
-                        path_to_sonar_properties: "${get_params_value(enableOverride, step_params, 'path_to_sonar_properties')}",
-                        fail_job_if_analysis_returned_exception: "${get_params_value(enableOverride, step_params, 'fail_job_if_analysis_returned_exception')}",
-                        jenkins_sonarqube_token_creds_id: "${get_params_value(enableOverride, step_params, 'jenkins_sonarqube_token_creds_id')}",
-                        app_stack: "nodejs",
-                        unit_testing_check: "${get_params_value(enableOverride, step_params, 'unit_testing_check')}",
-                        source_code_path: "${get_params_value(enableOverride, step_params, 'source_code_path')}"
-                    )
-                }
+                static_code_analysis.static_code_analysis_factory(
+                    repo_url: "${repo_url}",
+                    repo_url_type: "${get_params_value(enableOverride, step_params, 'repo_url_type')}",
+                    codebase_to_scan_directory: "${get_params_value(enableOverride, step_params, 'codebase_to_scan_directory')}",
+                    static_code_analysis_check: "${get_params_value(enableOverride, step_params, 'static_code_analysis_check')}",
+                    sonar_project_key: "${get_params_value(enableOverride, step_params, 'sonar_project_key')}",
+                    sonar_project_name: "${get_params_value(enableOverride, step_params, 'sonar_project_name')}",
+                    sonar_sources: "${get_params_value(enableOverride, step_params, 'sonar_sources')}",
+                    sonar_host_url: "${get_params_value(enableOverride, step_params, 'sonar_host_url')}",
+                    sonar_extra_args: "${get_params_value(enableOverride, step_params, 'sonar_extra_args')}",
+                    path_to_sonar_properties: "${get_params_value(enableOverride, step_params, 'path_to_sonar_properties')}",
+                    fail_job_if_analysis_returned_exception: "${get_params_value(enableOverride, step_params, 'fail_job_if_analysis_returned_exception')}",
+                    jenkins_sonarqube_token_creds_id: "${get_params_value(enableOverride, step_params, 'jenkins_sonarqube_token_creds_id')}",
+                    app_stack: "nodejs",
+                    unit_testing_check: "${get_params_value(enableOverride, step_params, 'unit_testing_check')}",
+                    source_code_path: "${get_params_value(enableOverride, step_params, 'source_code_path')}"
+                )
             }
             else {
                 echo 'Skipping Static Code Analysis stage as it is disabled.'
