@@ -23,8 +23,10 @@ def unit_test(Map step_params) {
     fail_job_if_unit_issue_detected = "${step_params.fail_job_if_unit_issue_detected}"
     source_code_path = "${step_params.source_code_path}"
     node_version = step_params.node_version ?: "18"
-    build_secret_creds_id = step_params.build_secret_creds_id ?: ''
-    build_secret_env_var  = step_params.build_secret_env_var  ?: 'BUILD_SECRET'
+    def raw_secret_id = step_params.build_secret_creds_id?.toString()?.trim()
+    def build_secret_creds_id = (raw_secret_id && raw_secret_id != 'null') ? raw_secret_id : ''
+    def raw_secret_var = step_params.build_secret_env_var?.toString()?.trim()
+    def build_secret_env_var  = (raw_secret_var && raw_secret_var != 'null') ? raw_secret_var : 'BUILD_SECRET'
 
     unit_test_reports_path = "${step_params.unit_test_reports_path ?: ''}"
     repo_dir = parser.fetch_git_repo_name('repo_url':"${repo_url}")
