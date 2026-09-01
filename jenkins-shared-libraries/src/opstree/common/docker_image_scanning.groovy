@@ -177,6 +177,8 @@ def trivy(Map step_params) {
             
             // Fix report permissions immediately so inject.sh and Jenkins can read it
             sh "sudo chown -R \$(id -u):\$(id -g) ${WORKSPACE}/trivy"
+            // Fix trivy cache permissions so Jenkins can clean up @tmp directory
+            sh "sudo chown -R \$(id -u):\$(id -g) ${trivyCacheDir} 2>/dev/null || true"
             logger.logger('msg':'Trivy scan completed successfully', 'level':'INFO')
 
             try {
