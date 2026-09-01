@@ -2233,6 +2233,7 @@ echo "Artifact Created Successfully: \$(ls -lh ${shellQuote("/output/${artifact_
                     -v /var/lib/jenkins/.yarn-cache:/root/.yarn \\
                     -v /var/lib/jenkins/.nextjs-cache/${safe_app_name}:/app/.next/cache \\
                     -e YARN_CACHE_FOLDER=/root/.yarn \\
+                    -e NODE_OPTIONS="--max-old-space-size=8192" \\
                     -w /app \\
                     ${shellQuote("node:${node_version}")} \\
                     sh /output/node_build.sh
