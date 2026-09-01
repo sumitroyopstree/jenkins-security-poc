@@ -4,7 +4,7 @@ def cipipeline = new opstree.ci.templates.java_ci.java_ci()
 def targetEnv = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
 
 def envMap = [
-     'TEST': [ecr_repo_name: 'hrc-kollect-cicd/apps',     ecr_region: 'us-east-1', account_id: '167121004129', credentials_id: 'hrc-aws-ecr-credentials'],
+     'TEST': [ecr_repo_name: 'hrc-kollect-cicd/apps',     ecr_region: 'us-east-1', account_id: '167121004129', credentials_id: ''],
     'DEV' : [account_id: '167121004129', ecr_region: 'us-east-1', ecr_repo_name: 'hrc-kollect-cicd/apps', credentials_id: 'hrc-aws-ecr-credentials'],
     'QA'  : [account_id: '167121004129', ecr_region: 'us-east-1', ecr_repo_name: 'hrc-kollect-cicd/apps', credentials_id: 'hrc-aws-ecr-credentials'],
     'DEMO': [account_id: '167121004129', ecr_region: 'us-east-1', ecr_repo_name: 'hrc-kollect-cicd/apps', credentials_id: 'hrc-aws-ecr-credentials'],
