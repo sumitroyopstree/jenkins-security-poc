@@ -1,7 +1,16 @@
 package opstree.common
 
 def publish(Map params) {
-    publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${params.report_dir}", reportFiles: "${params.report_file}", reportName: "${params.report_name}", reportTitles: '', useWrapperFileDirectly: true])
+    publishHTML([
+        allowMissing: true, 
+        alwaysLinkToLastBuild: true, 
+        keepAll: true, 
+        reportDir: "${params.report_dir}", 
+        reportFiles: "${params.report_file}", 
+        reportName: "${params.report_name}", 
+        reportTitles: '', 
+        useWrapperFileDirectly: true
+    ])
     if (params.dc_publisher == true) {
         dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
     }

@@ -666,9 +666,9 @@ def call(Map step_params) {
                 }
             }
 
-            // Clean root-locked files before executing workspace_management to prevent permission errors
-            sh 'sudo rm -rf ${WORKSPACE}@tmp/* ${WORKSPACE}/artifact 2>/dev/null || true'
-            sh 'sudo chown -R $(id -u):$(id -g) ${WORKSPACE} ${WORKSPACE}@tmp 2>/dev/null || true'
+            // Clean root-locked artifact files and fix workspace permissions safely
+            sh 'sudo rm -rf ${WORKSPACE}/artifact 2>/dev/null || true'
+            sh 'sudo chown -R $(id -u):$(id -g) ${WORKSPACE} 2>/dev/null || true'
 
             if (get_params_value(enableOverride, step_params, 'clean_workspace') != null && get_params_value(enableOverride, step_params, 'clean_workspace').toBoolean()) {
                 workspace.workspace_management(
