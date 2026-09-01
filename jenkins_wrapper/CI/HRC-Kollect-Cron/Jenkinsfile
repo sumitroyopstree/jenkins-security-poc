@@ -60,11 +60,15 @@ node('HRC-Kollect-Jenkins-Agent') {
         fail_job_if_analysis_returned_exception : 'false',
         jenkins_sonarqube_token_creds_id        : 'HRC_SONARQUBE_TOKEN',
 
-        // BUILD & PACKAGE ARTIFACT (NODE.JS)
+        // BUILD & PACKAGE ARTIFACT (NODE.JS / Plain Cron - No Compile Step)
         perform_code_build               : true,
         node_version                     : '20',
         package_manager                  : 'yarn',
         app_name                         : 'hrc-kollect-cron',
+        build_command                    : 'echo "No build step required for cron scheduler"',
+        build_output_path                : 'src',
+        include_node_modules             : true,
+        prune_dev_dependencies           : false,
 
         // PUBLISH TO S3
         artifact_publish_check           : true,
