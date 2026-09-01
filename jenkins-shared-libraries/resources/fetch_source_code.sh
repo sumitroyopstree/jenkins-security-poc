@@ -4,10 +4,20 @@
 GIT_HTTPS_URL=$(echo "$GIT_HTTPS_URL" | sed 's/~/\%7E/g')
 
 if [ -n "$GIT_USERNAME" ] && [ -n "$GIT_PASSWORD" ]; then
-    GIT_USER=$(echo $GIT_USERNAME | sed 's/@/%40/g')
-    GIT_PASS=$(echo $GIT_PASSWORD | sed 's/@/%40/g')
-    HTTPS_GIT_URL_TR=$(echo $GIT_HTTPS_URL | sed 's/https:\/\///')
-    git clone -b $BRANCH_NAME "https://${GIT_USER}:${GIT_PASS}@${HTTPS_GIT_URL_TR}"
+    HOST=$(echo "$GIT_HTTPS_URL" | sed -e 's#^https://##' -e 's#/.*##')
+    cat <<EOF > /root/.netrc
+machine ${HOST}
+login ${GIT_USERNAME}
+password ${GIT_PASSWORD}
+EOF
+    chmod 600 /root/.netrc
+
+    git clone -b $BRANCH_NAME "$GIT_HTTPS_URL" || {
+        GIT_USER=$(echo $GIT_USERNAME | sed 's/@/%40/g')
+        GIT_PASS=$(echo $GIT_PASSWORD | sed 's/@/%40/g')
+        HTTPS_GIT_URL_TR=$(echo $GIT_HTTPS_URL | sed 's/https:\/\///')
+        git clone -b $BRANCH_NAME "https://${GIT_USER}:${GIT_PASS}@${HTTPS_GIT_URL_TR}"
+    }
 
 elif [ -n "$PRIVATE_KEY" ]; then
     export GIT_SSH_COMMAND="ssh -i /root/*/ssh-key-private_key -o StrictHostKeyChecking=no"
