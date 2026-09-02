@@ -82,6 +82,9 @@ def unit_test(Map step_params) {
             // So lcov.info must have RELATIVE paths like SF:src/... (not SF:/usr/src/src/...)
             // We only fix paths generated inside old /app containers - convert /app/src/ - src/
             sh """
+                if [ -d coverage ]; then
+                    sudo chown -R \$(id -u):\$(id -g) coverage 2>/dev/null || true
+                fi
                 if [ -f coverage/lcov.info ]; then
                     # Fix absolute /app/src/ paths (some Docker base images use /app as workdir)
                     sed -i 's|^SF:/app/|SF:|g' coverage/lcov.info || true

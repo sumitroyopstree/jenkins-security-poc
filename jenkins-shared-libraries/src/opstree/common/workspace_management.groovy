@@ -17,10 +17,9 @@ def workspace_management(Map step_params) {
         logger.logger('msg':'Cleaning up workspace and temporary directories', 'level':'INFO')
         def workspace = env.WORKSPACE
 
-        // 1. Fix permissions FIRST on current job's workspace & temp dirs
+        // Fix permissions FIRST so cleanWs can delete root-created files instantly
         sh "sudo chown -R \$(id -u):\$(id -g) ${workspace} ${workspace}@tmp ${workspace}@script ${workspace}@libs 2>/dev/null || true"
 
-        // 2. Perform Jenkins cleanWs for current pipeline
         cleanWs(
             notFailBuild: params.ignore_clean_workspace_failure.toBoolean(),
             deleteDirs: params.delete_dirs.toBoolean(),
@@ -31,13 +30,7 @@ def workspace_management(Map step_params) {
             cleanWhenUnstable: params.clean_when_build_unstable.toBoolean()
         )
 
-        // 3. Clean up @tmp, @script, @libs, and ONLY current job's leftover ws-cleanup directories
-        sh """
-            JOB_NAME_DIR=\$(basename "${workspace}")
-            PARENT_DIR=\$(dirname "${workspace}")
-            sudo rm -rf "${workspace}@tmp" "${workspace}@script" "${workspace}@libs" 2>/dev/null || true
-            find "\${PARENT_DIR}" -maxdepth 1 -name "\${JOB_NAME_DIR}_ws-cleanup_*" -exec sudo rm -rf {} + 2>/dev/null || true
-        """.stripIndent()
+        sh "sudo rm -rf ${workspace}@tmp ${workspace}@script ${workspace}@libs 2>/dev/null || true"
 
         logger.logger('msg':'Cleanws Completed', 'level':'INFO')
     } else {
