@@ -33,7 +33,7 @@ def unit_test(Map step_params) {
     def project_path = "${WORKSPACE}/${repo_dir}${source_code_path ?: ''}"
     dir(project_path) {
         try {
-            def test_cmd = "([ -d node_modules ] || npm install) && (npm test -- --passWithNoTests --coverage --coverageReporters=text --coverageReporters=lcov --coverageReporters=html || true)"
+            def test_cmd = "([ -d node_modules ] || npm install) && (npm install --no-save jest-junit 2>/dev/null || true) && (JEST_JUNIT_OUTPUT_DIR=. JEST_JUNIT_OUTPUT_NAME=junit.xml npm test -- --passWithNoTests --reporters=default --reporters=jest-junit --coverage --coverageReporters=text --coverageReporters=lcov --coverageReporters=html || npm test -- --passWithNoTests --coverage --coverageReporters=text --coverageReporters=lcov --coverageReporters=html || true)"
 
             if (build_secret_creds_id) {
                 // Private Azure DevOps npm feed - fetch short-lived token and write .npmrc
