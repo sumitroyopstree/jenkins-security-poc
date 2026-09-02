@@ -2229,9 +2229,9 @@ echo "Artifact Created Successfully: \$(ls -lh ${shellQuote("/output/${artifact_
                 docker run --rm \\
                     -v ${shellQuote("${project_path}:/app")} \\
                     -v ${shellQuote("${artifact_dir}:/output")} \\
-                    -v /var/lib/jenkins/.yarn-cache:/root/.yarn \\
+                    -v /var/lib/jenkins/.yarn-cache:/root/.cache/yarn \\
                     -v /var/lib/jenkins/.nextjs-cache/${safe_app_name}:/app/.next/cache \\
-                    -e YARN_CACHE_FOLDER=/root/.yarn \\
+                    -e YARN_CACHE_FOLDER=/root/.cache/yarn \\
                     -e NODE_OPTIONS="--max-old-space-size=8192" \\
                     -w /app \\
                     ${shellQuote("node:${node_version}")} \\
