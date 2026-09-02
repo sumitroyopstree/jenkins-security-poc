@@ -30,8 +30,6 @@ def workspace_management(Map step_params) {
             cleanWhenUnstable: params.clean_when_build_unstable.toBoolean()
         )
 
-        sh "sudo rm -rf ${workspace}@tmp ${workspace}@script ${workspace}@libs 2>/dev/null || true"
-
         logger.logger('msg':'Cleanws Completed', 'level':'INFO')
     } else {
         logger.logger('msg':'Cleanws Skipped', 'level':'INFO')

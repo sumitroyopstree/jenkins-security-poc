@@ -2173,6 +2173,17 @@ echo "Preparing Artifact Inputs"
 echo "========================================"
 set -- "package.json" "\$ACTUAL_OUTPUT"
 
+if [ -f "ecosystem.config.js" ]; then
+    echo "Adding PM2 configuration file: ecosystem.config.js"
+    set -- "\$@" "ecosystem.config.js"
+elif [ -f "ecosystem.config.json" ]; then
+    echo "Adding PM2 configuration file: ecosystem.config.json"
+    set -- "\$@" "ecosystem.config.json"
+elif [ -f "ecosystem.config.cjs" ]; then
+    echo "Adding PM2 configuration file: ecosystem.config.cjs"
+    set -- "\$@" "ecosystem.config.cjs"
+fi
+
 ${
     include_node_modules
         ? """
