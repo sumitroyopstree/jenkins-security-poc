@@ -53,7 +53,7 @@ def sonar(Map step_params) {
                         "-Dsonar.projectName=${sonar_project_name} " +
                         "-Dsonar.sources=${actual_sources} " +
                         "-Dsonar.host.url=${actual_host} " +
-                        "-Dsonar.exclusions=**/node_modules/**,**/dist/**,**/.next/**,**/build/**,**/coverage/** " +
+                        "-Dsonar.exclusions=**/node_modules/**,**/dist/**,**/.next/**,**/build/**,**/coverage/**,**/*.xlsx,**/*.png,**/*.jpg,**/*.jpeg,**/*.pdf,**/*.ico,**/*.zip,**/*.tar.gz,**/*.db,**/*.otf,**/*.ttf,**/*.eot,**/*.woff* " +
                         "-Dsonar.javascript.lcov.reportPaths=lcov.info,coverage/lcov.info " +
                         "-Dsonar.typescript.lcov.reportPaths=lcov.info,coverage/lcov.info " +
                         "-Dsonar.scm.exclusions.disabled=true " +
