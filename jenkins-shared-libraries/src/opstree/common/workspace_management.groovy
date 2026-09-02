@@ -13,48 +13,34 @@ def workspace_management(Map step_params) {
         clean_when_build_succeed: get_value(step_params, 'clean_when_build_succeed', true),
         clean_when_build_unstable: get_value(step_params, 'clean_when_build_unstable', true)
     ]
-    if (params.clean_workspace == 'true') {
+    if (params.clean_workspace == 'true' || params.clean_workspace == true) {
         logger.logger('msg':'Cleaning up workspace and temporary directories', 'level':'INFO')
-        cleanWs(
-                notFailBuild: params.ignore_clean_workspace_failure.toBoolean(),
-                deleteDirs: params.delete_dirs.toBoolean(),
-                cleanWhenAborted: params.clean_when_build_aborted.toBoolean(),
-                cleanWhenFailure: params.clean_when_build_failed.toBoolean(),
-                cleanWhenNotBuilt: params.clean_when_not_built.toBoolean(),
-                cleanWhenSuccess: params.clean_when_build_succeed.toBoolean(),
-                cleanWhenUnstable: params.clean_when_build_unstable.toBoolean()
-            )
         def workspace = env.WORKSPACE
+
+        // 1. Fix permissions FIRST on current job's workspace & temp dirs
         sh "sudo chown -R \$(id -u):\$(id -g) ${workspace} ${workspace}@tmp ${workspace}@script ${workspace}@libs 2>/dev/null || true"
-        try {
-            if (fileExists("${workspace}@tmp")) {
-                dir("${workspace}@tmp") {
-                    deleteDir()
-                }
-            }
-        } catch (Exception e) {
-            logger.logger('msg':"Warning deleting @tmp: ${e.message}", 'level':'WARN')
-        }
-        try {
-            if (fileExists("${workspace}@script")) {
-                dir("${workspace}@script") {
-                    deleteDir()
-                }
-            }
-        } catch (Exception e) {
-            logger.logger('msg':"Warning deleting @script: ${e.message}", 'level':'WARN')
-        }
-        try {
-            if (fileExists("${workspace}@libs")) {
-                dir("${workspace}@libs") {
-                    deleteDir()
-                }
-            }
-        } catch (Exception e) {
-            logger.logger('msg':"Warning deleting @libs: ${e.message}", 'level':'WARN')
-        }
+
+        // 2. Perform Jenkins cleanWs for current pipeline
+        cleanWs(
+            notFailBuild: params.ignore_clean_workspace_failure.toBoolean(),
+            deleteDirs: params.delete_dirs.toBoolean(),
+            cleanWhenAborted: params.clean_when_build_aborted.toBoolean(),
+            cleanWhenFailure: params.clean_when_build_failed.toBoolean(),
+            cleanWhenNotBuilt: params.clean_when_not_built.toBoolean(),
+            cleanWhenSuccess: params.clean_when_build_succeed.toBoolean(),
+            cleanWhenUnstable: params.clean_when_build_unstable.toBoolean()
+        )
+
+        // 3. Clean up @tmp, @script, @libs, and ONLY current job's leftover ws-cleanup directories
+        sh """
+            JOB_NAME_DIR=\$(basename "${workspace}")
+            PARENT_DIR=\$(dirname "${workspace}")
+            sudo rm -rf "${workspace}@tmp" "${workspace}@script" "${workspace}@libs" 2>/dev/null || true
+            find "\${PARENT_DIR}" -maxdepth 1 -name "\${JOB_NAME_DIR}_ws-cleanup_*" -exec sudo rm -rf {} + 2>/dev/null || true
+        """.stripIndent()
+
         logger.logger('msg':'Cleanws Completed', 'level':'INFO')
-        } else {
+    } else {
         logger.logger('msg':'Cleanws Skipped', 'level':'INFO')
     }
 }
