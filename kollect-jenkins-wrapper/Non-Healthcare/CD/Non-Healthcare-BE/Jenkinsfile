@@ -32,7 +32,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         ssh_credentials_id   : currentEnv.ssh_creds,
         secret_arn           : currentEnv.secret_arn,
         package_manager      : 'yarn',
-        start_command        : 'yarn start',
+        start_command        : 'dist/server.js',
         health_check_endpoint : 'http://127.0.0.1:80/api/health',
 
         // NOTIFICATION
