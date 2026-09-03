@@ -582,6 +582,9 @@ def call(Map step_params) {
             if (get_params_value(enableOverride, step_params, 'artifact_publish_check') != null && get_params_value(enableOverride, step_params, 'artifact_publish_check').toBoolean()) {
                 stage('Publish Artifact') {
                     def calculatedSourcePath = env.GENERATED_ARTIFACT_PATH ?: get_params_value(enableOverride, step_params, 'artifact_source_path')
+                    if (!calculatedSourcePath || calculatedSourcePath == 'null') {
+                        calculatedSourcePath = env.GENERATED_ARTIFACT_PATH ?: ''
+                    }
 
                     publish.publish_factory(
                         repo_url: "${repo_url}",
@@ -600,7 +603,7 @@ def call(Map step_params) {
                         dockerhub_credentials_id: "${get_params_value(enableOverride, step_params, 'dockerhub_credentials_id')}",
                         dockerhub_username: "${get_params_value(enableOverride, step_params, 'dockerhub_username')}",
                         // S3 parameters
-                        artifact_source_path: "${calculatedSourcePath}",
+                        artifact_source_path: calculatedSourcePath,
                         artifact_s3_bucket_name: "${get_params_value(enableOverride, step_params, 'artifact_s3_bucket_name')}",
                         artifact_s3_bucket_aws_region: "${get_params_value(enableOverride, step_params, 'artifact_s3_bucket_aws_region')}",
                         artifact_s3_keypath_destination: "${get_params_value(enableOverride, step_params, 'artifact_s3_keypath_destination') ?: 'backend'}",

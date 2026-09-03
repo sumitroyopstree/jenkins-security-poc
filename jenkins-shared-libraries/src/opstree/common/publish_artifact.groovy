@@ -476,16 +476,32 @@ def publish_artifact(Map step_params) {
         if (step_params.artifact_destination_type?.toUpperCase() == 'S3') {
             def artifact_s3_bucket_aws_region   = step_params.artifact_s3_bucket_aws_region ?: 'us-east-1'
             def artifact_s3_bucket_name         = step_params.artifact_s3_bucket_name
-            def artifact_source_path            = env.GENERATED_ARTIFACT_PATH ?: step_params.artifact_source_path
             def artifact_s3_keypath_destination = step_params.artifact_s3_keypath_destination ?: 'backend'
-            def repo_url                        = "${step_params.repo_url}"
+            def artifact_source_path            = step_params.artifact_source_path
+
+            if (!artifact_source_path || artifact_source_path == 'null' || !fileExists(artifact_source_path)) {
+                artifact_source_path = env.GENERATED_ARTIFACT_PATH
+            }
+
+            if (!artifact_source_path || artifact_source_path == 'null' || !fileExists(artifact_source_path)) {
+                def detectedFile = sh(
+                    script: 'ls -1 "${WORKSPACE}/artifact/"*.tar.gz 2>/dev/null | head -n 1 || ls -1 "${WORKSPACE}/"*.tar.gz 2>/dev/null | head -n 1',
+                    returnStdout: true
+                ).trim()
+                if (detectedFile) {
+                    artifact_source_path = detectedFile
+                }
+            }
+
+            if (!artifact_source_path || artifact_source_path == 'null' || !fileExists(artifact_source_path)) {
+                error("Publish Artifact failed: No valid build artifact tarball found at '${artifact_source_path}' or in '${env.WORKSPACE}/artifact/'")
+            }
 
             def filename = new File(artifact_source_path).name
             def s3_target_path = "s3://${artifact_s3_bucket_name}/${artifact_s3_keypath_destination}/${filename}"
 
             logger.logger('msg':"Uploading ${artifact_source_path} to ${s3_target_path} using EC2 IAM Role", 'level':'INFO')
 
-            // Uses the IAM Role assigned to the Jenkins Agent instance automatically
             sh """
                 aws s3 cp "${artifact_source_path}" "${s3_target_path}" --region "${artifact_s3_bucket_aws_region}"
             """
