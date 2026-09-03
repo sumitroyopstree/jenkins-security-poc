@@ -486,12 +486,7 @@ def publish_artifact(Map step_params) {
             if (!artifact_source_path || artifact_source_path == 'null' || !fileExists(artifact_source_path)) {
                 def detectedFile = sh(
                     script: '''
-                        ls -1 "${WORKSPACE}/target/"*.jar 2>/dev/null | grep -v 'original-' | head -n 1 || \
-                        ls -1 "${WORKSPACE}/target/"*.war 2>/dev/null | head -n 1 || \
-                        ls -1 "${WORKSPACE}/build/libs/"*.jar 2>/dev/null | head -n 1 || \
-                        ls -1 "${WORKSPACE}/artifact/"*.tar.gz 2>/dev/null | head -n 1 || \
-                        ls -1 "${WORKSPACE}/"*.tar.gz 2>/dev/null | head -n 1 || \
-                        ls -1 "${WORKSPACE}/"*.jar 2>/dev/null | head -n 1
+                        find "${WORKSPACE}" -maxdepth 3 -type f \\( -name "*.jar" -o -name "*.war" -o -name "*.tar.gz" \\) ! -name "original-*" ! -name "*-sources.jar" 2>/dev/null | head -n 1
                     '''.stripIndent(),
                     returnStdout: true
                 ).trim()
