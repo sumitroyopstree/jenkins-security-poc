@@ -76,7 +76,7 @@ node('HRC-Kollect-Jenkins-Agent') {
 
         // TRIGGER CD PIPELINE (Recreate Mode)
         enable_trigger_cd_pipeline       : params.TRIGGER_CD != null ? params.TRIGGER_CD : true,
-        trigger_cd_pipeline_path         : 'CD/HRC-Kollect-Reporting-Module',
+        trigger_cd_pipeline_path         : 'Healthcare/CD/HRC-Kollect-Reporting-Module',
         image_tag_build_param            : 'artifact_name',
         environment                      : targetEnv,
 

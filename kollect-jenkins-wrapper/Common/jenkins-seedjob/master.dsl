@@ -1,11 +1,16 @@
-folder('CI') {
-    displayName('CI')
-    description('HRC Continuous Integration Pipelines')
+folder('Healthcare') {
+    displayName('Healthcare')
+    description('Healthcare Project Pipelines')
 }
 
-folder('CD') {
+folder('Healthcare/CI') {
+    displayName('CI')
+    description('Healthcare Continuous Integration Pipelines')
+}
+
+folder('Healthcare/CD') {
     displayName('CD')
-    description('HRC Continuous Delivery Pipelines')
+    description('Healthcare Continuous Delivery Pipelines')
 }
 
 folder('Non-Healthcare') {
@@ -15,15 +20,25 @@ folder('Non-Healthcare') {
 
 folder('Non-Healthcare/CI') {
     displayName('CI')
-    description('Non-Healthcare Continuous Integration')
+    description('Non-Healthcare Continuous Integration Pipelines')
 }
 
 folder('Non-Healthcare/CD') {
     displayName('CD')
-    description('Non-Healthcare Continuous Delivery')
+    description('Non-Healthcare Continuous Delivery Pipelines')
 }
 
-folder('user-management') {
+folder('Common') {
+    displayName('Common')
+    description('Common Utility & Administration Pipelines')
+}
+
+folder('Common/jenkins-seedjob') {
+    displayName('Jenkins Seed Job')
+    description('Seed Job pipeline generator')
+}
+
+folder('Common/user-management') {
     displayName('User Management')
     description('User onboarding and offboarding pipelines')
 }

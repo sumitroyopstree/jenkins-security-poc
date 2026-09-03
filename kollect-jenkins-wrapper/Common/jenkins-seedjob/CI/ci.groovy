@@ -103,9 +103,9 @@ def nonHealthcareCiJobs = [
     ]
 ]
 
-// Generate HRC CI Jobs under CI/
+// Generate HRC CI Jobs under Healthcare/CI/
 hrcCiJobs.each { jobName, config ->
-    pipelineJob("CI/${jobName}") {
+    pipelineJob("Healthcare/CI/${jobName}") {
         description("CI Pipeline for ${jobName} - HRC Project")
 
         logRotator {

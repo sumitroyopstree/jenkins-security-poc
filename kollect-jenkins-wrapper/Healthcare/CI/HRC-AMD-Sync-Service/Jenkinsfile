@@ -77,7 +77,7 @@ node('HRC-Kollect-Jenkins-Agent') {
 
         // TRIGGER CD PIPELINE (Recreate Mode)
         enable_trigger_cd_pipeline       : params.TRIGGER_CD != null ? params.TRIGGER_CD : true,
-        trigger_cd_pipeline_path         : 'CD/HRC-AMD-Sync-Service',
+        trigger_cd_pipeline_path         : 'Healthcare/CD/HRC-AMD-Sync-Service',
         image_tag_build_param            : 'artifact_name',
         environment                      : targetEnv,
 

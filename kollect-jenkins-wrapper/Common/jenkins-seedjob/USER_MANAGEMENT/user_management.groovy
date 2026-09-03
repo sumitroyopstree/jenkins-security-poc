@@ -31,7 +31,7 @@ def userJobs = [
 ]
 
 userJobs.each { jobName, config ->
-    pipelineJob("user-management/${jobName}") {
+    pipelineJob("Common/user-management/${jobName}") {
         displayName("${jobName}")
         description("User management pipeline for ${jobName} | Owner: ${config.owner}")
         logRotator {
