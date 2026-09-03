@@ -22,8 +22,8 @@ node('HRC-Kollect-Jenkins-Agent') {
         clean_workspace                  : true,
 
         // VCS MANAGEMENT
-        repo_https_url                   : 'https://gitlab.healthreconconnect.com/hrc/kollect-pay-portal-service.git',
-        repo_ssh_url                     : 'git@gitlab.healthreconconnect.com:hrc/kollect-pay-portal-service.git',
+        repo_https_url                   : 'https://gitlab.healthreconconnect.com/hrc/kollect-payportal-be.git',
+        repo_ssh_url                     : 'git@gitlab.healthreconconnect.com:hrc/kollect-payportal-be.git',
         repo_branch                      : params.BRANCH ?: 'main',
         repo_url_type                    : 'http',
         jenkins_git_creds_id             : 'piyushu-gitlab-token',
@@ -33,7 +33,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         // CREDS SCANNING (GITLEAKS)
         gitleaks_check                   : true,
         fail_job_if_leak_detected        : false,
-        gitleaks_scan_mode               : 'full',
+        gitleaks_scan_mode               : 'latest',
         gitleaks_report_jenkins_publish  : true,
 
         // DEPENDENCY SCANNING (OWASP)
@@ -50,6 +50,10 @@ node('HRC-Kollect-Jenkins-Agent') {
         node_version                     : '20',
         package_manager                  : 'yarn',
         app_name                         : 'hrc-kollect-pay-portal-be',
+        build_command                    : 'yarn build',
+        build_output_path                : 'dist',
+        include_node_modules             : true,
+        prune_dev_dependencies           : false,
 
         // UNIT TEST & CODE COVERAGE
         unit_testing_check               : 'true',

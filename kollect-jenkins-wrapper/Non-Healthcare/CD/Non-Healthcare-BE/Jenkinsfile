@@ -4,6 +4,7 @@ def cdpipeline = new opstree.cd.templates.ssh_pm2.ssh_pm2_deployment()
 def targetEnv = (params.ENVIRONMENT ?: 'DEV').toUpperCase()
 
 def envMap = [
+    'TEST': [server_ip: '10.2.30.254', deploy_dir: '/opt/non-healthcare-test/backend', app_name: 'non-healthcare-test-backend', ssh_creds: 'Non-Healthcare-test-server', secret_arn: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.nonhealthcare.com-kg1Ktx'],
     'DEV' : [server_ip: '10.2.40.183', deploy_dir: '/opt/non-healthcare-dev/backend', app_name: 'non-healthcare-dev-backend', ssh_creds: 'Non-Healthcare-dev-server', secret_arn: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.nonhealthcare.com-kg1Ktx'],
     'QA'  : [server_ip: '10.2.40.239', deploy_dir: '/opt/non-healthcare-qa/backend', app_name: 'non-healthcare-qa-backend', ssh_creds: 'Non-Healthcare-qa-server', secret_arn: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:qa.nonhealthcare.com-3xKQQa'],
     'DEMO': [server_ip: '10.2.40.110', deploy_dir: '/opt/non-healthcare-demo/backend', app_name: 'non-healthcare-demo-backend', ssh_creds: 'Non-Healthcare-demo-server', secret_arn: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:demo.nonhealthcare.com-fpjxjz']
@@ -18,22 +19,29 @@ node('HRC-Kollect-Jenkins-Agent') {
         // WORKSPACE MANAGEMENT
         clean_workspace      : true,
 
+        // ARTIFACT CONFIGURATION - MUST MATCH CI S3 LOCATION
+        artifact_s3_bucket_name         : 'hrc-cicd-test-bucket',
+        artifact_s3_bucket_aws_region   : 'us-east-1',
+        artifact_s3_keypath_destination : 'Non-Healthcare-BE',
+        artifact_name                   : params.artifact_name ?: '',
+
         // VCS MANAGEMENT
         repo_https_url       : 'https://gitlab.healthreconconnect.com/hrc/one-kollect-core-service.git',
         repo_branch          : params.BRANCH ?: 'main',
         repo_url_type        : 'http',
-        jenkins_git_creds_id : 'hasantha-hrc-gitlab-access',
+        jenkins_git_creds_id : 'piyushu-gitlab-token',
         source_code_path     : '',
 
         // DYNAMIC DEPLOYMENT CONFIG (BY ENVIRONMENT)
         server_ip            : currentEnv.server_ip,
         deploy_dir           : currentEnv.deploy_dir,
         app_name             : currentEnv.app_name,
-        node_version         : 'v16.17.0',
+        node_version         : 'v20.20.2',
         ssh_credentials_id   : currentEnv.ssh_creds,
         secret_arn           : currentEnv.secret_arn,
         package_manager      : 'yarn',
         start_command        : 'yarn start',
+        health_check_endpoint : 'http://127.0.0.1:80/api/health',
 
         // NOTIFICATION
         notification_enabled                    : true,
