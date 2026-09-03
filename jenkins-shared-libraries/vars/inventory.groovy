@@ -98,7 +98,7 @@ def call(String type, String appName, String envName = 'TEST') {
 
         // NON-HEALTHCARE JOBS
         'Non-Healthcare-BE': [
-            'TEST': [ip: '10.2.30.254', path: '/opt/non-healthcare-test/backend', app: 'non-healthcare-test-backend', ssh: 'HRC-Kollect-Test-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.nonhealthcare.com-kg1Ktx'],
+            'TEST': [ip: '10.2.30.254', path: '/opt/non-healthcare-test/backend', app: 'non-healthcare-test-backend', ssh: 'HRC-Kollect-Test-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.hrckollect.com-tDjPIP'],
             'DEV' : [ip: '10.2.40.183', path: '/opt/non-healthcare-dev/backend', app: 'non-healthcare-dev-backend', ssh: 'Non-Healthcare-dev-server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.nonhealthcare.com-kg1Ktx'],
             'QA'  : [ip: '10.2.40.239', path: '/opt/non-healthcare-qa/backend', app: 'non-healthcare-qa-backend', ssh: 'Non-Healthcare-qa-server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:qa.nonhealthcare.com-3xKQQa'],
             'DEMO': [ip: '10.2.40.110', path: '/opt/non-healthcare-demo/backend', app: 'non-healthcare-demo-backend', ssh: 'Non-Healthcare-demo-server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:demo.nonhealthcare.com-fpjxjz']
