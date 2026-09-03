@@ -3,16 +3,7 @@ def cipipeline = new opstree.ci.templates.nodejs_ci.nodejs_ci()
 
 def targetEnv = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
 
-def envMap = [
-    'TEST': [artifact_s3_bucket_name: 'hrc-cicd-test-bucket', artifact_s3_keypath: 'HRC-Kollect-Client-Billing-BE', aws_region: 'us-east-1', credentials_id: 'hrc-aws-ecr-credentials'],
-    'DEV' : [artifact_s3_bucket_name: 'hrc-cicd-test-bucket', artifact_s3_keypath: 'HRC-Kollect-Client-Billing-BE', aws_region: 'us-east-1', credentials_id: 'hrc-aws-ecr-credentials'],
-    'QA'  : [artifact_s3_bucket_name: 'hrc-cicd-test-bucket', artifact_s3_keypath: 'HRC-Kollect-Client-Billing-BE', aws_region: 'us-east-1', credentials_id: 'hrc-aws-ecr-credentials'],
-    'DEMO': [artifact_s3_bucket_name: 'hrc-cicd-test-bucket', artifact_s3_keypath: 'HRC-Kollect-Client-Billing-BE', aws_region: 'us-east-1', credentials_id: 'hrc-aws-ecr-credentials'],
-    'STG' : [artifact_s3_bucket_name: 'hrc-cicd-test-bucket', artifact_s3_keypath: 'HRC-Kollect-Client-Billing-BE', aws_region: 'us-east-1', credentials_id: 'hrc-aws-ecr-credentials'],
-    'PROD': [artifact_s3_bucket_name: 'hrc-cicd-test-bucket', artifact_s3_keypath: 'HRC-Kollect-Client-Billing-BE', aws_region: 'us-east-1', credentials_id: 'hrc-aws-ecr-credentials']
-]
-
-def currentEnv = envMap[targetEnv] ?: envMap['TEST']
+def currentEnv = inventory.ci('HRC-Kollect-BE', targetEnv)
 
 node('HRC-Kollect-Jenkins-Agent') {
     cipipeline.call([
@@ -84,6 +75,6 @@ node('HRC-Kollect-Jenkins-Agent') {
         notification_enabled                    : true,
         notification_channel                    : 'gmail',
         gmail_notification_from_email_id        : 'smtp@kernernorland.com',
-        gmail_notification_recipients_email_ids : 'asangai@healthreconconnect.com'
+        gmail_notification_recipients_email_ids : 'harinath.telukuntla@opstree.com'
     ])
 }
