@@ -55,7 +55,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         enable_jenkins_build_param_override: true,
 
         // WORKSPACE MANAGEMENT
-        clean_workspace      : true,
+        clean_workspace                 : true,
 
         // ARTIFACT CONFIGURATION (S3)
         artifact_s3_bucket_name         : 'hrc-cicd-test-bucket',
@@ -65,22 +65,22 @@ node('HRC-Kollect-Jenkins-Agent') {
         jenkins_aws_credentials_id      : 'hrc-aws-ecr-credentials',
 
         // VCS MANAGEMENT
-        repo_https_url       : 'https://gitlab.healthreconconnect.com/hrc/kollect-client-billing-service.git',
-        repo_branch          : params.BRANCH ?: 'main',
-        repo_url_type        : 'http',
-        jenkins_git_creds_id : 'piyushu-gitlab-token',
-        source_code_path     : '',
+        repo_https_url                  : 'https://gitlab.healthreconconnect.com/hrc/kollect-client-billing-service.git',
+        repo_branch                     : params.BRANCH ?: 'main',
+        repo_url_type                   : 'http',
+        jenkins_git_creds_id            : 'piyushu-gitlab-token',
+        source_code_path                : '',
 
-        // DYNAMIC DEPLOYMENT CONFIG (BY ENVIRONMENT)
-        server_ip            : currentEnv.server_ip,
-        deploy_dir           : currentEnv.deploy_dir,
-        app_name             : currentEnv.app_name,
-        node_version         : 'v24.6.0',
-        ssh_credentials_id   : currentEnv.ssh_creds,
-        secret_arn           : currentEnv.secret_arn,
-        package_manager      : 'npm',
-        build_app_on_server  : true,
-        start_command        : 'npm run start',
+        // TARGET VM & ENVIRONMENT BINDINGS
+        server_ip                       : currentEnv.server_ip,
+        deploy_dir                      : currentEnv.deploy_dir,
+        app_name                        : currentEnv.app_name,
+        node_version                    : 'v24.6.0',
+        ssh_credentials_id              : currentEnv.ssh_creds,
+        secret_arn                      : currentEnv.secret_arn,
+        package_manager                 : 'npm',
+        build_app_on_server             : true,
+        start_command                   : 'npm run start',
 
         // NOTIFICATION
         notification_enabled                    : true,
