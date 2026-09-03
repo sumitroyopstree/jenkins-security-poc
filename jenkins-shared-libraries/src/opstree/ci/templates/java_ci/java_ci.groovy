@@ -341,6 +341,7 @@ def call(Map step_params) {
                         artifact_source_path: "${step_params.artifact_source_path}",
                         artifact_s3_bucket_name: "${step_params.artifact_s3_bucket_name}",
                         artifact_s3_bucket_aws_region: "${step_params.artifact_s3_bucket_aws_region}",
+                        artifact_s3_keypath_destination: "${step_params.artifact_s3_keypath_destination ?: step_params.artifact_s3_keypath ?: 'backend'}",
                         // GCR parameters
                         gcp_project_id: "${step_params.gcp_project_id}",
                         gcr_hostname: "${step_params.gcr_hostname}",
