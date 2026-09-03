@@ -1,54 +1,8 @@
 @Library('jenkins-shared-libraries@feature-cicd') _
 def cdpipeline = new opstree.cd.templates.ssh_pm2.ssh_pm2_deployment()
 
-def targetEnv = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
-
-def envMap = [
-    'TEST': [
-        server_ip  : '10.2.30.254',
-        deploy_dir : '/opt/hrc-kollect-test/client-billing-backend',
-        app_name   : 'hrc-kollect-client-billing-backend-test',
-        ssh_creds  : 'HRC-Kollect-Test-Server',
-        secret_arn : 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.hrckollect.com-tDjPIP'
-    ],
-    'DEV' : [
-        server_ip  : '10.2.40.133',
-        deploy_dir : '/opt/hrc-kollect-dev/client-billing-backend',
-        app_name   : 'hrc-kollect-client-billing-backend-dev',
-        ssh_creds  : 'HRC-Kollect-Dev-Server',
-        secret_arn : 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.hrckollect.com-tDjPIP'
-    ],
-    'QA'  : [
-        server_ip  : '10.2.10.111',
-        deploy_dir : '/opt/hrc-kollect-qa/client-billing-backend',
-        app_name   : 'hrc-kollect-client-billing-backend-qa',
-        ssh_creds  : 'HRC-Kollect-QA-Server',
-        secret_arn : 'arn:aws:secretsmanager:us-east-1:167121004129:secret:qa-hrckollect-com-0mHt87'
-    ],
-    'DEMO': [
-        server_ip  : '10.2.40.238',
-        deploy_dir : '/opt/hrc-kollect-demo/client-billing-backend',
-        app_name   : 'hrc-kollect-client-billing-backend-demo',
-        ssh_creds  : 'HRC-Kollect-Demo-Server',
-        secret_arn : 'arn:aws:secretsmanager:us-east-1:167121004129:secret:demo-new-hrckollect-com-KrSHaN'
-    ],
-    'STG' : [
-        server_ip  : '10.2.40.170',
-        deploy_dir : '/opt/client-billing-backend',
-        app_name   : 'hrc-kollect-client-billing-backend-stg',
-        ssh_creds  : 'HRC-Kollect-Stg-Server',
-        secret_arn : 'arn:aws:secretsmanager:us-east-1:167121004129:secret:stg-hrckollect-com-oLPno0'
-    ],
-    'PROD': [
-        server_ip  : '10.2.10.118',
-        deploy_dir : '/opt/client-billing-backend',
-        app_name   : 'hrc-kollect-client-billing-backend-prod',
-        ssh_creds  : 'HRC-Kollect-PROD-BE',
-        secret_arn : 'arn:aws:secretsmanager:us-east-1:167121004129:secret:portal.hrckollect.com-xvlUjU'
-    ]
-]
-
-def currentEnv = envMap[targetEnv] ?: envMap['TEST']
+def targetEnv  = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
+def currentEnv = inventory.cd('HRC-Kollect-Client-Billing-BE', targetEnv)
 
 node('HRC-Kollect-Jenkins-Agent') {
     cdpipeline.call([
@@ -75,7 +29,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         server_ip                       : currentEnv.server_ip,
         deploy_dir                      : currentEnv.deploy_dir,
         app_name                        : currentEnv.app_name,
-        node_version                    : 'v24.6.0',
+        node_version                    : 'v20.18.0',
         ssh_credentials_id              : currentEnv.ssh_creds,
         secret_arn                      : currentEnv.secret_arn,
         package_manager                 : 'npm',

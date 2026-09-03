@@ -1,18 +1,8 @@
 @Library('jenkins-shared-libraries@feature-cicd') _
 
-def targetEnv = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
-def imageTag = params.image_tag ?: 'latest'
-
-def envMap = [
-    'TEST': [server_ip: '10.2.30.254', ssh_creds: 'HRC-Kollect-Test-Server', app_name: 'hrc-amd-sync-service-test', ecr_repo: 'hrc-kollect-cicd/apps'],
-    'DEV' : [server_ip: '10.2.40.133', ssh_creds: 'HRC-Kollect-Dev-Server',  app_name: 'hrc-amd-sync-service-dev',  ecr_repo: 'hrc-amd-sync-service-dev'],
-    'QA'  : [server_ip: '10.2.10.111', ssh_creds: 'HRC-Kollect-QA-Server',   app_name: 'hrc-amd-sync-service-qa',   ecr_repo: 'hrc-amd-sync-service-qa'],
-    'DEMO': [server_ip: '10.2.40.238', ssh_creds: 'HRC-Kollect-Demo-Server', app_name: 'hrc-amd-sync-service-demo', ecr_repo: 'hrc-amd-sync-service-demo'],
-    'STG' : [server_ip: '10.2.40.170', ssh_creds: 'HRC-Kollect-Stg-Server',  app_name: 'hrc-amd-sync-service-stg',  ecr_repo: 'hrc-amd-sync-service-stg'],
-    'PROD': [server_ip: '10.2.10.118', ssh_creds: 'HRC-Kollect-PROD-Server', app_name: 'hrc-amd-sync-service-prod', ecr_repo: 'hrc-amd-sync-service-prod']
-]
-
-def currentEnv = envMap[targetEnv] ?: envMap['TEST']
+def targetEnv  = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
+def imageTag   = params.image_tag ?: 'latest'
+def currentEnv = inventory.cd('HRC-AMD-Sync-Service', targetEnv)
 
 node('HRC-Kollect-Jenkins-Agent') {
     currentBuild.description = "CD: HRC-AMD-Sync-Service | Env: ${targetEnv} | Tag: ${imageTag}"
@@ -34,7 +24,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         // ECR
         ecr_account                         : '167121004129',
         ecr_region                          : 'us-east-1',
-        ecr_repo                            : currentEnv.ecr_repo,
+        ecr_repo                            : currentEnv.ecr_repo ?: 'hrc-kollect-cicd/apps',
 
         // PORTS
         container_port                      : 8180,

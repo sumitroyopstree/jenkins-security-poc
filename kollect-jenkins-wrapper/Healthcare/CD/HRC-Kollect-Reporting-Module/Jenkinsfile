@@ -1,19 +1,9 @@
 @Library('jenkins-shared-libraries@feature-cicd') _
 def cdpipeline = new opstree.cd.templates.docker_ecr.docker_deployment()
 
-def targetEnv = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
-def imageTag = params.image_tag ?: 'latest'
-
-def envMap = [
-    'TEST': [server_ip: '10.2.30.254', ssh_creds: 'HRC-Kollect-Test-Server', app_name: 'kollect-reporting-module-test'],
-    'DEV' : [server_ip: '10.2.40.133', ssh_creds: 'HRC-Kollect-Dev-Server', app_name: 'kollect-reporting-module-dev'],
-    'QA'  : [server_ip: '10.2.10.111', ssh_creds: 'HRC-Kollect-QA-Server', app_name: 'kollect-reporting-module-qa'],
-    'DEMO': [server_ip: '10.2.40.238', ssh_creds: 'HRC-Kollect-Demo-Server', app_name: 'kollect-reporting-module-demo'],
-    'STG' : [server_ip: '10.2.40.170', ssh_creds: 'HRC-Kollect-Stg-Server', app_name: 'kollect-reporting-module-stg'],
-    'PROD': [server_ip: '10.2.10.118', ssh_creds: 'HRC-Kollect-PROD-Server', app_name: 'kollect-reporting-module-prod']
-]
-
-def currentEnv = envMap[targetEnv] ?: envMap['TEST']
+def targetEnv  = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
+def imageTag   = params.image_tag ?: 'latest'
+def currentEnv = inventory.cd('HRC-Kollect-Reporting-Module', targetEnv)
 
 node('HRC-Kollect-Jenkins-Agent') {
     currentBuild.description = "CD: HRC-Kollect-Reporting-Module | Env: ${targetEnv} | Tag: ${imageTag}"
