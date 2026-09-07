@@ -12,8 +12,8 @@ node('HRC-Kollect-Jenkins-Agent') {
         clean_workspace                  : true,
 
         // VCS MANAGEMENT
-        repo_https_url                   : 'https://gitlab.healthreconconnect.com/hrc/kollect-ui-service.git',
-        repo_ssh_url                     : 'git@gitlab.healthreconconnect.com:hrc/kollect-ui-service.git',
+        repo_https_url                   : 'https://gitlab.healthreconconnect.com/hrc/kollect-frontend.git',
+        repo_ssh_url                     : 'git@gitlab.healthreconconnect.com:hrc/kollect-frontend.git',
         repo_branch                      : params.BRANCH ?: 'main',
         repo_url_type                    : 'http',
         jenkins_git_creds_id             : 'piyushu-gitlab-token',
