@@ -23,6 +23,7 @@ def unit_test(Map step_params) {
     fail_job_if_unit_issue_detected = "${step_params.fail_job_if_unit_issue_detected}"
     source_code_path = "${step_params.source_code_path}"
     node_version = step_params.node_version ?: "18"
+    def package_manager = step_params.package_manager ?: "yarn"
     def raw_secret_id = step_params.build_secret_creds_id?.toString()?.trim()
     def build_secret_creds_id = (raw_secret_id && raw_secret_id != 'null') ? raw_secret_id : ''
     def raw_secret_var = step_params.build_secret_env_var?.toString()?.trim()
@@ -33,7 +34,9 @@ def unit_test(Map step_params) {
     def project_path = "${WORKSPACE}/${repo_dir}${source_code_path ?: ''}"
     dir(project_path) {
         try {
-            def test_cmd = "([ -d node_modules ] || npm install) && (npm install --no-save jest-junit 2>/dev/null || true) && (JEST_JUNIT_OUTPUT_DIR=. JEST_JUNIT_OUTPUT_NAME=junit.xml npm test -- --passWithNoTests --reporters=default --reporters=jest-junit --coverage --coverageReporters=text --coverageReporters=lcov --coverageReporters=html || npm test -- --passWithNoTests --coverage --coverageReporters=text --coverageReporters=lcov --coverageReporters=html || true)"
+            def install_cmd = (package_manager == 'yarn') ? "(yarn install || npm install)" : "(npm install)"
+            def test_runner = (package_manager == 'yarn') ? "yarn test" : "npm test"
+            def test_cmd = "export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true HEADLESS=true && ${install_cmd} && (npm install --no-save jest-junit 2>/dev/null || yarn add --dev jest-junit 2>/dev/null || true) && (JEST_JUNIT_OUTPUT_DIR=. JEST_JUNIT_OUTPUT_NAME=junit.xml ${test_runner} -- --passWithNoTests --reporters=default --reporters=jest-junit --coverage --coverageReporters=text --coverageReporters=lcov --coverageReporters=html || ${test_runner} -- --passWithNoTests --coverage --coverageReporters=text --coverageReporters=lcov --coverageReporters=html || ${test_runner} || true)"
 
             if (build_secret_creds_id) {
                 // Private Azure DevOps npm feed - fetch short-lived token and write .npmrc
