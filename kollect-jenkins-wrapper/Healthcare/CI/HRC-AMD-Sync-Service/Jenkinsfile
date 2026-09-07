@@ -68,8 +68,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         image_name                              : 'hrc-amd-sync-service',
         artifact_publish_check                  : true,
         artifact_destination_type               : 'ecr',
-        jenkins_aws_credentials_id              : currentEnv.credentials_id,
-        ecr_repo_name                           : cdEnv.ecr,
+        ecr_repo_name                           : cdEnv.ecr_repo,
         ecr_region                              : currentEnv.ecr_region,
         account_id                              : currentEnv.account_id,
 
