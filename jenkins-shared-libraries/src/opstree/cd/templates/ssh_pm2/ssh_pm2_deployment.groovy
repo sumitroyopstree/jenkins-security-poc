@@ -965,6 +965,28 @@ def call(Map step_params) {
                 echo "[INFO] S3 Artifact: s3://${s3_bucket}/${s3_keypath}/${artifact_name}"
             }
 
+            stage('Deployment Plan & Approval') {
+                echo """
+                =======================================================
+                                DEPLOYMENT TARGET DETAILS
+                =======================================================
+                  Application Name   : ${app_name}
+                  Target Environment : ${environment_name}
+                  Target Server IP   : ${server_ip}
+                  Deploy Directory   : ${deploy_dir}
+                  Artifact Name      : ${artifact_name}
+                  S3 Artifact Path   : s3://${s3_bucket}/${s3_keypath}/${artifact_name}
+                  SSH Credential     : ${ssh_credentials_id}
+                =======================================================
+                """.stripIndent()
+
+                input(
+                    id      : 'deploy-approval',
+                    message : "Deploy ${app_name} (${artifact_name}) to ${environment_name} on ${server_ip}?",
+                    ok      : 'Approve & Deploy'
+                )
+            }
+
             stage('Execute Recreate Deployment') {
                 sshagent([ssh_credentials_id]) {
                     sh """
@@ -1017,6 +1039,12 @@ if [ -d "dist" ]; then
     mv dist dist.bak
 fi
 
+if [ -f ".env" ]; then
+    echo "Backing up existing .env..."
+    cp -f .env .env.bak
+    cp -f .env /tmp/${app_name}.env.bak
+fi
+
 # 4. Pull bundle from S3
 echo "[3/6] Fetching artifact from S3: s3://${s3_bucket}/${s3_keypath}/${artifact_name}..."
 aws s3 cp "s3://${s3_bucket}/${s3_keypath}/${artifact_name}" /tmp/release.tar.gz --region "${secret_region}"
@@ -1028,7 +1056,11 @@ rm -f /tmp/release.tar.gz
 
 # 6. Inject .env Configuration
 echo "[5/6] Generating .env configuration..."
-touch .env
+if [ -f ".env.bak" ]; then
+    cp -f .env.bak .env
+else
+    touch .env
+fi
 """
 
                     // Priority 1: Custom env content passed directly
@@ -1040,9 +1072,10 @@ echo "${base64CustomEnv}" | base64 -d > .env
                     // Priority 2: AWS Secrets Manager
                     else if (secret_arn) {
                         deployScript += """
-echo "NODE_ENV=production" > .env
-echo "SECRET_KEY_MANAGER_KEY=${secret_arn}" >> .env
-echo "SECRET_KEY_MANAGER_REGION=${secret_region}" >> .env
+# Ensure Secrets Manager variables are set in .env
+grep -q '^NODE_ENV=' .env 2>/dev/null && sed -i 's/^NODE_ENV=.*/NODE_ENV=production/' .env || echo "NODE_ENV=production" >> .env
+grep -q '^SECRET_KEY_MANAGER_KEY=' .env 2>/dev/null && sed -i "s|^SECRET_KEY_MANAGER_KEY=.*|SECRET_KEY_MANAGER_KEY=${secret_arn}|" .env || echo "SECRET_KEY_MANAGER_KEY=${secret_arn}" >> .env
+grep -q '^SECRET_KEY_MANAGER_REGION=' .env 2>/dev/null && sed -i "s|^SECRET_KEY_MANAGER_REGION=.*|SECRET_KEY_MANAGER_REGION=${secret_region}|" .env || echo "SECRET_KEY_MANAGER_REGION=${secret_region}" >> .env
 
 # Export Secrets Manager JSON payload into .env
 if command -v jq >/dev/null 2>&1; then
@@ -1088,7 +1121,13 @@ fi
 # Run DB migrations if enabled
 if [ "${run_db_migration}" = "true" ]; then
     echo "Executing DB migrations..."
-    yarn sequelize db:migrate 2>/dev/null || npm run sequelize db:migrate 2>/dev/null || true
+    if [ -f "node_modules/.bin/sequelize" ]; then
+        ./node_modules/.bin/sequelize db:migrate || true
+    elif command -v yarn >/dev/null 2>&1; then
+        yarn sequelize db:migrate 2>/dev/null || true
+    else
+        npm run sequelize db:migrate 2>/dev/null || true
+    fi
 fi
 
 # 7. Launch Application under PM2
@@ -1109,8 +1148,29 @@ fi
 \$PM2_BIN save
 sleep 4
 \$PM2_BIN status
+"""
 
-# 8. Post-deployment health verification
+                    sh """#!/bin/bash
+                        ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes ubuntu@${server_ip} 'bash -s' << 'EOF'
+${deployScript}
+EOF
+                    """
+                }
+            }
+
+            stage('Health Check') {
+                def healthStatus = 0
+                sshagent([ssh_credentials_id]) {
+                    healthStatus = sh(
+                        returnStatus: true,
+                        script: """#!/bin/bash
+                            ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes ubuntu@${server_ip} 'bash -s' << 'EOF'
+export NVM_DIR="\$HOME/.nvm"
+[ -s "\$NVM_DIR/nvm.sh" ] && . "\$NVM_DIR/nvm.sh"
+nvm use ${node_version} 2>/dev/null || true
+export PATH="/usr/local/bin:/usr/bin:\$HOME/.nvm/versions/node/\$(node -v 2>/dev/null)/bin:\$PATH"
+PM2_BIN=\$(which pm2 2>/dev/null || echo "/usr/local/bin/pm2")
+
 echo "Verifying health on ${health_check_endpoint}..."
 HEALTHY=false
 HTTP_STATUS=""
@@ -1125,37 +1185,80 @@ for i in \$(seq 1 15); do
     sleep 3
 done
 
-if [ "\$HEALTHY" = true ]; then
+if [ "\$HEALTHY" = "true" ]; then
     echo "=========================================================="
     echo "SUCCESS: ${app_name} is running and reachable (HTTP \$HTTP_STATUS)."
     echo "=========================================================="
+    cd "${deploy_dir}"
     rm -rf dist.bak
     rm -f /tmp/${app_name}.env.bak
+    exit 0
 else
     echo "=========================================================="
     echo "[ERROR] Health check failed! (HTTP Status: \$HTTP_STATUS)"
     echo "=========================================================="
     echo "--- Recent Application Error Logs ---"
     \$PM2_BIN logs "${app_name}" --lines 40 --nostream || true
-    
     echo "--- Active Ports on Host ---"
     sudo ss -tulpn | grep -E 'node|pm2|80|3200|3000|5000|8080|9090' || true
-
-    if [ -d "dist.bak" ]; then
-        echo "Rolling back to previous backup build..."
-        rm -rf dist
-        mv dist.bak dist
-        \$PM2_BIN restart "${app_name}" 2>/dev/null || true
-    fi
     exit 1
 fi
-"""
-
-                    sh """#!/bin/bash
-                        ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes ubuntu@${server_ip} 'bash -s' << 'EOF'
-${deployScript}
 EOF
-                    """
+                        """
+                    )
+                }
+
+                if (healthStatus != 0) {
+                    stage('Rollback Approval') {
+                        echo """
+                        =======================================================
+                                    ⚠️ HEALTH CHECK FAILED ⚠️
+                        =======================================================
+                          Application Name   : ${app_name}
+                          Target Environment : ${environment_name}
+                          Target Server IP   : ${server_ip}
+                          Health Endpoint    : ${health_check_endpoint}
+                          Status             : Service is unreachable or crashing!
+                        =======================================================
+                        """.stripIndent()
+
+                        input(
+                            id      : 'rollback-approval',
+                            message : "Health check FAILED for ${app_name} on ${server_ip}! Approve rollback to restore previous working version?",
+                            ok      : 'Approve & Rollback'
+                        )
+                    }
+
+                    stage('Execute Rollback') {
+                        echo "[INFO] Executing rollback on ${server_ip}..."
+                        sshagent([ssh_credentials_id]) {
+                            sh """#!/bin/bash
+                                ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes ubuntu@${server_ip} 'bash -s' << 'EOF'
+export NVM_DIR="\$HOME/.nvm"
+[ -s "\$NVM_DIR/nvm.sh" ] && . "\$NVM_DIR/nvm.sh"
+nvm use ${node_version} 2>/dev/null || true
+export PATH="/usr/local/bin:/usr/bin:\$HOME/.nvm/versions/node/\$(node -v 2>/dev/null)/bin:\$PATH"
+PM2_BIN=\$(which pm2 2>/dev/null || echo "/usr/local/bin/pm2")
+
+cd "${deploy_dir}"
+if [ -d "dist.bak" ]; then
+    echo "[ROLLBACK] Restoring previous build from dist.bak..."
+    rm -rf dist
+    mv dist.bak dist
+    if [ -f ".env.bak" ]; then
+        echo "[ROLLBACK] Restoring previous .env backup..."
+        cp -f .env.bak .env
+    fi
+    \$PM2_BIN restart "${app_name}" 2>/dev/null || true
+    echo "[ROLLBACK SUCCESS] Application successfully rolled back to previous version."
+else
+    echo "[ROLLBACK WARNING] No dist.bak found to restore!"
+fi
+EOF
+                            """
+                        }
+                        error("[DEPLOYMENT FAILED] Health check failed for ${app_name}. Rollback was approved and executed successfully.")
+                    }
                 }
             }
 

@@ -3,32 +3,35 @@ def cdpipeline = new opstree.cd.templates.ssh_pm2.ssh_pm2_deployment()
 
 def targetEnv  = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
 def currentEnv = inventory.cd('HRC-Kollect-BE', targetEnv)
+def ciEnv      = inventory.ci('HRC-Kollect-BE', targetEnv)
 
 node('HRC-Kollect-Jenkins-Agent') {
+    currentBuild.description = "CD: HRC-Kollect-BE | Env: ${targetEnv} | Artifact: ${params.artifact_name ?: 'latest'}"
+
     cdpipeline.call([
-        enable_jenkins_build_param_override: true,
+        enable_jenkins_build_param_override     : true,
 
         // WORKSPACE MANAGEMENT
-        clean_workspace                 : true,
+        clean_workspace                         : true,
 
         // ARTIFACT CONFIGURATION (S3)
-        artifact_s3_bucket_name         : 'hrc-cicd-test-bucket',
-        artifact_s3_bucket_aws_region   : 'us-east-1',
-        artifact_s3_keypath_destination : 'HRC-Kollect-BE',
-        artifact_name                   : params.artifact_name ?: '',
-        jenkins_aws_credentials_id      : 'hrc-aws-ecr-credentials',
+        artifact_s3_bucket_name                 : ciEnv.artifact_s3_bucket_name,
+        artifact_s3_bucket_aws_region           : ciEnv.aws_region,
+        artifact_s3_keypath_destination         : ciEnv.artifact_s3_keypath,
+        artifact_name                           : params.artifact_name ?: '',
+        jenkins_aws_credentials_id              : ciEnv.credentials_id,
 
         // TARGET VM & ENVIRONMENT BINDINGS
-        server_ip                       : currentEnv.server_ip,
-        deploy_dir                      : currentEnv.deploy_dir,
-        app_name                        : currentEnv.app_name,
-        node_version                    : 'v20.18.0',
-        ssh_credentials_id              : currentEnv.ssh_creds,
-        secret_arn                      : currentEnv.secret_arn,
-        secret_region                   : 'us-east-1',
-        run_db_migration                : false,
-        start_command                   : 'yarn start',
-        health_check_endpoint           : 'http://127.0.0.1:80/api/health',
+        server_ip                               : currentEnv.server_ip,
+        deploy_dir                              : currentEnv.deploy_dir,
+        app_name                                : currentEnv.app_name,
+        node_version                            : 'v24.6.0',
+        ssh_credentials_id                      : currentEnv.ssh_creds,
+        secret_arn                              : currentEnv.secret_arn,
+        secret_region                           : 'us-east-1',
+        run_db_migration                        : true,
+        start_command                           : 'yarn start',
+        health_check_endpoint                   : 'http://127.0.0.1:80/api/health',
 
         // NOTIFICATIONS
         notification_enabled                    : true,

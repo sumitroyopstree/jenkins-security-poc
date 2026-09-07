@@ -41,6 +41,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         node_version                     : '20',
         package_manager                  : 'yarn',
         app_name                         : 'hrc-kollect-be',
+        additional_artifact_paths        : ['fetchSecrets.js', 'migrations', 'config'],
 
         // UNIT TEST & CODE COVERAGE
         unit_testing_check               : 'true',

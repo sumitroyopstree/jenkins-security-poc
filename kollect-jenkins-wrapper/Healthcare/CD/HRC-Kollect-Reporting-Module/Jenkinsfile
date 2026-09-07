@@ -1,5 +1,4 @@
 @Library('jenkins-shared-libraries@feature-cicd') _
-def cdpipeline = new opstree.cd.templates.docker_ecr.docker_deployment()
 
 def targetEnv  = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
 def imageTag   = params.image_tag ?: 'latest'
@@ -8,23 +7,30 @@ def currentEnv = inventory.cd('HRC-Kollect-Reporting-Module', targetEnv)
 node('HRC-Kollect-Jenkins-Agent') {
     currentBuild.description = "CD: HRC-Kollect-Reporting-Module | Env: ${targetEnv} | Tag: ${imageTag}"
 
-    cdpipeline.call([
-        enable_jenkins_build_param_override: true,
+    def cdPipeline = new opstree.cd.templates.docker_ecr.docker_deployment()
+    cdPipeline.call([
+        enable_jenkins_build_param_override     : true,
 
         // WORKSPACE MANAGEMENT
-        clean_workspace      : true,
+        clean_workspace                         : true,
 
-        // DOCKER CONTAINER DEPLOYMENT (SSH -> Remote Server)
-        server_ip            : currentEnv.server_ip,
-        ssh_credentials_id   : currentEnv.ssh_creds,
-        app_name             : currentEnv.app_name,
-        ecr_repo             : 'hrc-kollect-cicd/apps',
-        ecr_account          : '167121004129',
-        ecr_region           : 'us-east-1',
-        container_port       : '8080',
-        host_port            : '8080',
+        // APPLICATION / CONTAINER NAME
+        app_name                                : currentEnv.app_name,
 
-        // NOTIFICATION
+        // TARGET SERVER
+        server_ip                               : currentEnv.server_ip,
+        ssh_credentials_id                      : currentEnv.ssh_creds,
+
+        // ECR
+        ecr_account                             : currentEnv.ecr_account,
+        ecr_region                              : currentEnv.ecr_region,
+        ecr_repo                                : currentEnv.ecr_repo,
+
+        // PORTS
+        container_port                          : currentEnv.container_port,
+        host_port                               : currentEnv.host_port,
+
+        // NOTIFICATIONS
         notification_enabled                    : true,
         notification_channel                    : 'gmail',
         gmail_notification_from_email_id        : 'smtp@kernernorland.com',

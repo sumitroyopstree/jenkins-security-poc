@@ -115,63 +115,97 @@ def call(Map step_params) {
             }
 
             stage('Health Check') {
+                def healthStatus = 0
                 sshagent([ssh_credentials_id]) {
-                    sh """#!/bin/bash
-                        ssh -o StrictHostKeyChecking=no ubuntu@${server_ip} '
-                            echo "[INFO] Verifying health and stability for container ${app_name}..."
-                            SUCCESS=false
-                            ATTEMPTS=${health_check_retries}
-                            INTERVAL=${health_check_interval}
+                    healthStatus = sh(
+                        returnStatus: true,
+                        script: """#!/bin/bash
+                            ssh -o StrictHostKeyChecking=no ubuntu@${server_ip} '
+                                echo "[INFO] Verifying health and stability for container ${app_name}..."
+                                SUCCESS=false
+                                ATTEMPTS=${health_check_retries}
+                                INTERVAL=${health_check_interval}
 
-                            for i in \$(seq 1 \$ATTEMPTS); do
-                                sleep \$INTERVAL
-                                STATUS=\$(docker inspect --format="{{.State.Status}}" ${app_name} 2>/dev/null || echo "not_found")
-                                RESTARTING=\$(docker inspect --format="{{.State.Restarting}}" ${app_name} 2>/dev/null || echo "false")
-                                echo "[INFO] Health check attempt \$i/\$ATTEMPTS: container status is \"\$STATUS\" (restarting: \$RESTARTING)"
+                                for i in \$(seq 1 \$ATTEMPTS); do
+                                    sleep \$INTERVAL
+                                    STATUS=\$(docker inspect --format="{{.State.Status}}" ${app_name} 2>/dev/null || echo "not_found")
+                                    RESTARTING=\$(docker inspect --format="{{.State.Restarting}}" ${app_name} 2>/dev/null || echo "false")
+                                    echo "[INFO] Health check attempt \$i/\$ATTEMPTS: container status is \"\$STATUS\" (restarting: \$RESTARTING)"
 
-                                if [ "\$STATUS" = "running" ] && [ "\$RESTARTING" != "true" ]; then
-                                    SUCCESS=true
-                                else
-                                    SUCCESS=false
-                                    if [ "\$STATUS" = "exited" ] || [ "\$STATUS" = "dead" ]; then
-                                        echo "[ERROR] Container exited unexpectedly!"
-                                        break
-                                    fi
-                                fi
-                            done
-
-                            if [ "\$SUCCESS" = "true" ]; then
-                                echo "[SUCCESS] Container ${app_name} is running healthy and stable."
-                                # Remove backup container as new deployment is verified
-                                docker rm -f ${app_name}_backup 2>/dev/null || true
-                                docker image prune -f 2>/dev/null || true
-                            else
-                                echo "[ERROR] Health check FAILED! Container ${app_name} is not stable."
-                                echo "================= Container Logs (Last 100 Lines) ================="
-                                docker logs --tail 100 ${app_name} 2>/dev/null || true
-                                echo "==================================================================="
-
-                                # AUTO-ROLLBACK TO PREVIOUS CONTAINER
-                                if docker ps -a --filter "name=^/${app_name}_backup\$" --format "{{.Names}}" | grep -q "^${app_name}_backup\$"; then
-                                    echo "[ROLLBACK] Initiating automatic rollback to previous container (${app_name}_backup)..."
-                                    docker stop ${app_name} 2>/dev/null || true
-                                    docker rm -f ${app_name} 2>/dev/null || true
-                                    docker rename ${app_name}_backup ${app_name}
-                                    docker start ${app_name}
-                                    sleep 5
-                                    ROLLBACK_STATUS=\$(docker inspect --format="{{.State.Status}}" ${app_name} 2>/dev/null || echo "failed")
-                                    if [ "\$ROLLBACK_STATUS" = "running" ]; then
-                                        echo "[ROLLBACK SUCCESS] Restored previous container ${app_name} successfully."
+                                    if [ "\$STATUS" = "running" ] && [ "\$RESTARTING" != "true" ]; then
+                                        SUCCESS=true
                                     else
-                                        echo "[ROLLBACK FAILED] Previous container could not be started!"
+                                        SUCCESS=false
+                                        if [ "\$STATUS" = "exited" ] || [ "\$STATUS" = "dead" ]; then
+                                            echo "[ERROR] Container exited unexpectedly!"
+                                            break
+                                        fi
                                     fi
+                                done
+
+                                if [ "\$SUCCESS" = "true" ]; then
+                                    echo "[SUCCESS] Container ${app_name} is running healthy and stable."
+                                    docker rm -f ${app_name}_backup 2>/dev/null || true
+                                    docker image prune -f 2>/dev/null || true
+                                    exit 0
                                 else
-                                    echo "[ROLLBACK] No backup container found. Unable to rollback."
+                                    echo "[ERROR] Health check FAILED! Container ${app_name} is not stable."
+                                    echo "================= Container Logs (Last 100 Lines) ================="
+                                    docker logs --tail 100 ${app_name} 2>/dev/null || true
+                                    echo "==================================================================="
+                                    exit 1
                                 fi
-                                exit 1
-                            fi
-                        '
-                    """
+                            '
+                        """
+                    )
+                }
+
+                if (healthStatus != 0) {
+                    stage('Rollback Approval') {
+                        echo """
+                        =======================================================
+                                    ⚠️ HEALTH CHECK FAILED ⚠️
+                        =======================================================
+                          Application Name   : ${app_name}
+                          Target Environment : ${environment_name}
+                          Target Server IP   : ${server_ip}
+                          Status             : Container exited or crashlooping!
+                        =======================================================
+                        """.stripIndent()
+
+                        input(
+                            id      : 'rollback-approval',
+                            message : "Health check FAILED for container ${app_name} on ${server_ip}! Approve rollback to previous container?",
+                            ok      : 'Approve & Rollback'
+                        )
+                    }
+
+                    stage('Execute Rollback') {
+                        echo "[INFO] Executing rollback to previous container on ${server_ip}..."
+                        sshagent([ssh_credentials_id]) {
+                            sh """#!/bin/bash
+                                ssh -o StrictHostKeyChecking=no ubuntu@${server_ip} '
+                                    if docker ps -a --filter "name=^/${app_name}_backup\$" --format "{{.Names}}" | grep -q "^${app_name}_backup\$"; then
+                                        echo "[ROLLBACK] Restoring previous container (${app_name}_backup)..."
+                                        docker stop ${app_name} 2>/dev/null || true
+                                        docker rm -f ${app_name} 2>/dev/null || true
+                                        docker rename ${app_name}_backup ${app_name}
+                                        docker start ${app_name}
+                                        sleep 5
+                                        ROLLBACK_STATUS=\$(docker inspect --format="{{.State.Status}}" ${app_name} 2>/dev/null || echo "failed")
+                                        if [ "\$ROLLBACK_STATUS" = "running" ]; then
+                                            echo "[ROLLBACK SUCCESS] Restored previous container ${app_name} successfully."
+                                        else
+                                            echo "[ROLLBACK FAILED] Previous container could not be started!"
+                                        fi
+                                    else
+                                        echo "[ROLLBACK] No backup container found. Unable to rollback."
+                                    fi
+                                '
+                            """
+                        }
+                        error("[DEPLOYMENT FAILED] Health check failed for container ${app_name}. Rollback was approved and executed successfully.")
+                    }
                 }
             }
 

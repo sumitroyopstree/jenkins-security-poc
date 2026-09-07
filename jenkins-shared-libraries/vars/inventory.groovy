@@ -80,12 +80,12 @@ def call(String type, String appName, String envName = 'TEST') {
             'PROD': [ip: '10.2.10.118', path: '/opt/hrc-kollect-prod/pay-portal-backend', app: 'hrc-kollect-pay-portal-backend-prod', ssh: 'HRC-Kollect-PROD-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:portal.hrckollect.com-xvlUjU']
         ],
         'HRC-Kollect-Reporting-Module': [
-            'TEST': [ip: '10.2.30.254', ssh: 'HRC-Kollect-Test-Server', app: 'kollect-reporting-module-test'],
-            'DEV' : [ip: '10.2.40.133', ssh: 'HRC-Kollect-Dev-Server', app: 'kollect-reporting-module-dev'],
-            'QA'  : [ip: '10.2.10.111', ssh: 'HRC-Kollect-QA-Server', app: 'kollect-reporting-module-qa'],
-            'DEMO': [ip: '10.2.40.238', ssh: 'HRC-Kollect-Demo-Server', app: 'kollect-reporting-module-demo'],
-            'STG' : [ip: '10.2.40.170', ssh: 'HRC-Kollect-Stg-Server', app: 'kollect-reporting-module-stg'],
-            'PROD': [ip: '10.2.10.118', ssh: 'HRC-Kollect-PROD-Server', app: 'kollect-reporting-module-prod']
+            'TEST': [ip: '10.2.30.254', ssh: 'HRC-Kollect-Test-Server', app: 'kollect-reporting-module-test', ecr: 'hrc-kollect-cicd/apps', ecr_account: '167121004129', ecr_region: 'us-east-1', container_port: 8080, host_port: 8080],
+            //'DEV' : [ip: '10.2.40.133', ssh: 'HRC-Kollect-Dev-Server', app: 'kollect-reporting-module-dev', ecr: 'hrc-kollect-cicd/apps', ecr_account: '167121004129', ecr_region: 'us-east-1', container_port: 8080, host_port: 8080],
+            //'QA'  : [ip: '10.2.10.111', ssh: 'HRC-Kollect-QA-Server', app: 'kollect-reporting-module-qa', ecr: 'hrc-kollect-cicd/apps', ecr_account: '167121004129', ecr_region: 'us-east-1', container_port: 8080, host_port: 8080],
+            //'DEMO': [ip: '10.2.40.238', ssh: 'HRC-Kollect-Demo-Server', app: 'kollect-reporting-module-demo', ecr: 'hrc-kollect-cicd/apps', ecr_account: '167121004129', ecr_region: 'us-east-1', container_port: 8080, host_port: 8080],
+            //'STG' : [ip: '10.2.40.170', ssh: 'HRC-Kollect-Stg-Server', app: 'kollect-reporting-module-stg', ecr: 'hrc-kollect-cicd/apps', ecr_account: '167121004129', ecr_region: 'us-east-1', container_port: 8080, host_port: 8080],
+            //'PROD': [ip: '10.2.10.118', ssh: 'HRC-Kollect-PROD-Server', app: 'kollect-reporting-module-prod', ecr: 'hrc-kollect-cicd/apps', ecr_account: '167121004129', ecr_region: 'us-east-1', container_port: 8080, host_port: 8080]
         ],
         'HRC-AMD-Sync-Service': [
             'TEST': [ip: '10.2.30.254', ssh: 'HRC-Kollect-Test-Server', app: 'hrc-amd-sync-service-test', ecr: 'hrc-kollect-cicd/apps', ecr_account: '167121004129', ecr_region: 'us-east-1', container_port: 8082, host_port: 8182],
