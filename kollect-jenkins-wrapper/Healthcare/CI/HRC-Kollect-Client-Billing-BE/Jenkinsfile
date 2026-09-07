@@ -42,6 +42,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         node_version                     : '20',
         package_manager                  : 'npm',
         app_name                         : 'hrc-kollect-client-billing-be',
+        additional_artifact_paths        : ['fetchSecrets.js'],
 
         // UNIT TEST & CODE COVERAGE
         unit_testing_check               : 'true',

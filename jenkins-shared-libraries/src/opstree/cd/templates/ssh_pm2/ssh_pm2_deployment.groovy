@@ -237,6 +237,8 @@ echo "${k}=${v}" >> .env
 if [ -f "fetchSecrets.js" ]; then
     echo "Running fetchSecrets.js..."
     node fetchSecrets.js || true
+else
+    echo "console.log('fetchSecrets: secrets configured via CI/CD environment');" > fetchSecrets.js
 fi
 
 # Run DB migrations if enabled
@@ -254,17 +256,26 @@ fi
 # 7. Launch Application under PM2
 echo "[6/6] Launching PM2 process for ${app_name}..."
 
-if [ -n "${start_command}" ] && [ "${start_command}" != "dist/main.js" ]; then
-    \$PM2_BIN start "${start_command}" --name "${app_name}" --update-env
-elif [ -f "ecosystem.config.js" ]; then
-    \$PM2_BIN start ecosystem.config.js --name "${app_name}" --update-env
-elif [ -f "dist/main.js" ]; then
+if [ -f "dist/main.js" ]; then
+    echo "Starting via compiled entrypoint: dist/main.js"
     \$PM2_BIN start dist/main.js --name "${app_name}" --update-env
 elif [ -f "dist/server.js" ]; then
+    echo "Starting via compiled entrypoint: dist/server.js"
     \$PM2_BIN start dist/server.js --name "${app_name}" --update-env
+elif [ -f "dist/index.js" ]; then
+    echo "Starting via compiled entrypoint: dist/index.js"
+    \$PM2_BIN start dist/index.js --name "${app_name}" --update-env
 elif [ -f "server.js" ]; then
+    echo "Starting via compiled entrypoint: server.js"
     \$PM2_BIN start server.js --name "${app_name}" --update-env
+elif [ -n "${start_command}" ] && [ "${start_command}" != "dist/main.js" ]; then
+    echo "Starting via start_command: ${start_command}"
+    \$PM2_BIN start "${start_command}" --name "${app_name}" --update-env
+elif [ -f "ecosystem.config.js" ]; then
+    echo "Starting via ecosystem.config.js"
+    \$PM2_BIN start ecosystem.config.js --name "${app_name}" --update-env
 else
+    echo "Starting fallback: ${start_command}"
     \$PM2_BIN start "${start_command}" --name "${app_name}" --update-env
 fi
 

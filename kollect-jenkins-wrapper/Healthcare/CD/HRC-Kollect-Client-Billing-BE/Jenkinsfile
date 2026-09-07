@@ -30,8 +30,8 @@ node('HRC-Kollect-Jenkins-Agent') {
         secret_arn                              : currentEnv.secret_arn,
         secret_region                           : 'us-east-1',
         package_manager                         : 'npm',
-        start_command                           : 'npm run start',
-        health_check_endpoint                   : 'http://127.0.0.1:5000/api-v2',
+        start_command                           : 'dist/main.js',
+        health_check_endpoint                   : 'http://127.0.0.1:3200/api-v2',
 
         // NOTIFICATION
         notification_enabled                    : true,
