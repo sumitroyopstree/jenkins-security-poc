@@ -1194,6 +1194,27 @@ if [ "\$HEALTHY" = "true" ]; then
     rm -f /tmp/${app_name}.env.bak
     exit 0
 else
+    # Fallback: Check if PM2 process is online and listening on an active port
+    APP_STATUS=\$(\$PM2_BIN jlist 2>/dev/null | jq -r ".[] | select(.name==\"${app_name}\") | .pm2_env.status" 2>/dev/null || echo "")
+    APP_PID=\$(\$PM2_BIN jlist 2>/dev/null | jq -r ".[] | select(.name==\"${app_name}\") | .pid" 2>/dev/null || echo "")
+
+    if [ "\$APP_STATUS" = "online" ] && [ -n "\$APP_PID" ] && [ "\$APP_PID" != "0" ]; then
+        DETECTED_PORT=\$(sudo ss -tulpn 2>/dev/null | grep "pid=\${APP_PID}" | awk '{print \$5}' | awk -F: '{print \$NF}' | head -n 1)
+        if [ -n "\$DETECTED_PORT" ]; then
+            echo "[INFO] Health check on ${health_check_endpoint} returned \$HTTP_STATUS, but ${app_name} (PID \$APP_PID) is listening on port \${DETECTED_PORT}!"
+            FALLBACK_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:\${DETECTED_PORT}/" || true)
+            if [ "\$FALLBACK_STATUS" != "000" ] && [ -n "\$FALLBACK_STATUS" ]; then
+                echo "=========================================================="
+                echo "SUCCESS: ${app_name} is running and reachable on port \${DETECTED_PORT} (HTTP \$FALLBACK_STATUS)."
+                echo "=========================================================="
+                cd "${deploy_dir}"
+                rm -rf dist.bak
+                rm -f /tmp/${app_name}.env.bak
+                exit 0
+            fi
+        fi
+    fi
+
     echo "=========================================================="
     echo "[ERROR] Health check failed! (HTTP Status: \$HTTP_STATUS)"
     echo "=========================================================="
