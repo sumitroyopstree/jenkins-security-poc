@@ -39,12 +39,13 @@ node('HRC-Kollect-Jenkins-Agent') {
         // BUILD & PACKAGE ARTIFACT (NODE.JS / Next.js)
         perform_code_build               : true,
         node_version                     : '20',
-        package_manager                  : 'yarn',
+        package_manager                  : 'npm',
         app_name                         : 'hrc-kollect-client-billing-fe',
-        build_command                    : 'yarn build',
+        build_command                    : 'npm run build',
         build_output_path                : '.next',
         include_node_modules             : true,
         prune_dev_dependencies           : false,
+        additional_artifact_paths        : ['public', 'next.config.js', 'next.config.mjs', 'next.config.ts'],
 
         // UNIT TEST & CODE COVERAGE
         unit_testing_check               : 'true',

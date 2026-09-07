@@ -56,12 +56,12 @@ def call(String type, String appName, String envName = 'TEST') {
             'PROD': [ip: '10.2.10.118', path: '/opt/client-billing-backend', app: 'hrc-kollect-client-billing-backend-prod', ssh: 'HRC-Kollect-PROD-BE', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:portal.hrckollect.com-xvlUjU']
         ],
         'HRC-Kollect-Client-Billing-FE': [
-            'TEST': [s3_bucket: 'hrc-kollect-client-billing-test-fe', cloudfront_id: 'E1RYWTTS4NPREW'],
-            'DEV' : [s3_bucket: 'hrc-kollect-client-billing-dev-fe', cloudfront_id: 'E1RYWTTS4NPREW'],
-            'QA'  : [s3_bucket: 'hrc-kollect-client-billing-qa-fe', cloudfront_id: 'E1RYWTTS4NPREW'],
-            'DEMO': [s3_bucket: 'hrc-kollect-client-billing-demo-fe', cloudfront_id: 'E1RYWTTS4NPREW'],
-            'STG' : [s3_bucket: 'hrc-kollect-client-billing-stg-fe', cloudfront_id: 'E1RYWTTS4NPREW'],
-            'PROD': [s3_bucket: 'hrc-kollect-client-billing-prod-fe', cloudfront_id: 'E1RYWTTS4NPREW']
+            'TEST': [ip: '10.2.30.254', path: '/opt/hrc-kollect-test/client-billing-frontend', app: 'hrc-kollect-client-billing-frontend-test', ssh: 'HRC-Kollect-Test-Server', k1_url: 'https://dev.hrckollect.com'],
+            'DEV' : [ip: '10.2.40.133', path: '/opt/hrc-kollect-dev/client-billing-frontend', app: 'hrc-kollect-client-billing-frontend-dev', ssh: 'HRC-Kollect-Dev-Server', k1_url: 'https://dev.hrckollect.com'],
+            'QA'  : [ip: '10.2.10.111', path: '/opt/hrc-kollect-qa/client-billing-frontend', app: 'hrc-kollect-client-billing-frontend-qa', ssh: 'HRC-Kollect-QA-Server', k1_url: 'https://qa.hrckollect.com'],
+            'DEMO': [ip: '10.2.40.238', path: '/opt/hrc-kollect-demo/client-billing-frontend', app: 'hrc-kollect-client-billing-frontend-demo', ssh: 'HRC-Kollect-Demo-Server', k1_url: 'https://demo.hrckollect.com'],
+            'STG' : [ip: '10.2.40.170', path: '/opt/hrc-kollect-stg/client-billing-frontend', app: 'hrc-kollect-client-billing-frontend-stg', ssh: 'HRC-Kollect-Stg-Server', k1_url: 'https://stg.hrckollect.com'],
+            'PROD': [ip: '10.2.10.118', path: '/opt/hrc-kollect-prod/client-billing-frontend', app: 'hrc-kollect-client-billing-frontend-prod', ssh: 'HRC-Kollect-PROD-Server', k1_url: 'https://portal.hrckollect.com']
         ],
         'HRC-Kollect-frontdesk-backend-BE': [
             'TEST': [ip: '10.2.30.254', path: '/opt/hrc-kollect-test/frontdesk-backend', app: 'hrc-kollect-frontdesk-backend-test', ssh: 'HRC-Kollect-Test-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.hrckollect.com-tDjPIP'],
@@ -144,7 +144,8 @@ def call(String type, String appName, String envName = 'TEST') {
             ecr_account    : item.ecr_account,
             ecr_region     : item.ecr_region,
             container_port : item.container_port,
-            host_port      : item.host_port
+            host_port      : item.host_port,
+            k1_url         : item.k1_url ?: 'https://dev.hrckollect.com'
         ]
     }
 }
