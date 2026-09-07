@@ -319,38 +319,46 @@ if [[ "${start_command}" == *"start-crons"* ]]; then
     fi
     echo "[INFO] Using TS runner: \${TSX_BIN:-none (fallback to node)}"
 
-    # Inject interpreter into ecosystem.config.js using Python (safe, no shell escaping issues)
+    # Patch ecosystem.config.js using Node.js require() — parses real JS, no regex/string hacks
     if [ -f "ecosystem.config.js" ] && [ -n "\$TSX_BIN" ]; then
-        python3 - <<PYEOF
-import os
-path = "ecosystem.config.js"
-if not os.path.exists(path):
-    print("[INFO] No ecosystem.config.js found, skipping injection")
-else:
-    content = open(path).read()
-    if "interpreter:" in content:
-        print("[INFO] interpreter already configured in ecosystem.config.js")
-    else:
-        ts_bin = os.environ.get("TSX_BIN", "tsx")
-        lines = content.split("\\n")
-        out = []
-        modified = False
-        for line in lines:
-            s = line.strip().rstrip(",")
-            if "script" in s and (".ts'" in s or '.ts"' in s):
-                clean = line.rstrip()
-                out.append(clean if clean.endswith(",") else clean + ",")
-                indent = " " * (len(line) - len(line.lstrip()))
-                out.append(indent + "interpreter: '" + ts_bin + "',")
-                modified = True
-            else:
-                out.append(line)
-        if modified:
-            open(path, "w").write("\\n".join(out))
-            print("[INFO] Injected interpreter: " + ts_bin + " into ecosystem.config.js")
-        else:
-            print("[INFO] No .ts script entries found, no injection needed")
-PYEOF
+        cat > /tmp/_pm2_patch.js << 'PATCHEOF'
+var fs = require('fs');
+var path = require('path');
+var cfgPath = path.resolve(process.cwd(), 'ecosystem.config.js');
+if (!fs.existsSync(cfgPath)) {
+  console.log('[INFO] No ecosystem.config.js found, skipping');
+  process.exit(0);
+}
+var src = fs.readFileSync(cfgPath, 'utf8');
+if (src.indexOf('interpreter:') !== -1) {
+  console.log('[INFO] interpreter already set in ecosystem.config.js');
+  process.exit(0);
+}
+delete require.cache[cfgPath];
+var config;
+try { config = require(cfgPath); } catch(e) {
+  console.log('[WARN] Could not parse ecosystem.config.js: ' + e.message);
+  process.exit(0);
+}
+var tsxBin = process.env.TSX_BIN || 'tsx';
+var modified = false;
+if (config && config.apps && Array.isArray(config.apps)) {
+  config.apps.forEach(function(app) {
+    if (app.script && app.script.indexOf('.ts') !== -1 && !app.interpreter) {
+      app.interpreter = tsxBin;
+      modified = true;
+    }
+  });
+}
+if (modified) {
+  fs.writeFileSync(cfgPath, 'module.exports = ' + JSON.stringify(config, null, 2) + ';');
+  console.log('[INFO] Injected interpreter: ' + tsxBin + ' into ecosystem.config.js');
+} else {
+  console.log('[INFO] No unset .ts entries found in ecosystem.config.js');
+}
+PATCHEOF
+        node /tmp/_pm2_patch.js || true
+        rm -f /tmp/_pm2_patch.js
     fi
 
     echo "Executing cron master daemon launcher: ${start_command}..."
