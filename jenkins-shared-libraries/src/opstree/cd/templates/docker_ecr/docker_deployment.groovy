@@ -52,6 +52,28 @@ def call(Map step_params) {
                 echo "Pipeline ID: ${currentBuild.number}"
             }
 
+            stage('Deployment Plan & Approval') {
+                echo """
+                =======================================================
+                                DEPLOYMENT TARGET DETAILS
+                =======================================================
+                  Application Name   : ${app_name}
+                  Target Environment : ${environment_name}
+                  Target Server IP   : ${server_ip}
+                  Port Mapping       : ${host_port}:${container_port}
+                  ECR Repository     : ${ecr_repo}
+                  Docker Image Tag   : ${image_tag}
+                  SSH Credential     : ${ssh_credentials_id}
+                =======================================================
+                """.stripIndent()
+
+                input(
+                    id      : 'deploy-approval',
+                    message : "Deploy ${app_name}:${image_tag} to ${environment_name} on ${server_ip}:${host_port}?",
+                    ok      : 'Approve & Deploy'
+                )
+            }
+
             stage('Deploy & Start Container on Server') {
                 echo "[INFO] Target Server IP : ${server_ip}"
                 echo "[INFO] Container Name   : ${app_name}"

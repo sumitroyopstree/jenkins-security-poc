@@ -7,14 +7,6 @@ def currentEnv = inventory.cd('HRC-AMD-Sync-Service', targetEnv)
 node('HRC-Kollect-Jenkins-Agent') {
     currentBuild.description = "CD: HRC-AMD-Sync-Service | Env: ${targetEnv} | Tag: ${imageTag}"
 
-    // APPROVAL GATE - Required before deployment
-    stage('Approval') {
-        input(
-            id      : 'deploy-approval',
-            message : "Deploy hrc-amd-sync-service:${imageTag} to ${targetEnv}?",
-            ok      : 'Approve & Deploy'
-        )
-    }
 
     def cdPipeline = new opstree.cd.templates.docker_ecr.docker_deployment()
     cdPipeline.call([
