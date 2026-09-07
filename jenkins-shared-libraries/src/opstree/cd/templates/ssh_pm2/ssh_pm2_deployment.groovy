@@ -300,34 +300,48 @@ if [[ "${start_command}" == *"start-crons"* ]]; then
     echo "Ensuring node_modules dependencies are properly linked..."
     npm install --prefer-offline 2>/dev/null || npm install 2>/dev/null || true
 
-    # Ensure ts-node and typescript are installed globally for PM2 daemon
-    echo "[INFO] Ensuring ts-node / typescript support for PM2..."
-    npm install -g ts-node typescript tsx 2>/dev/null || npm install ts-node typescript tsx 2>/dev/null || true
-    export PATH="\$(npm bin -g 2>/dev/null || echo ''):\$HOME/.nvm/versions/node/\$(node -v 2>/dev/null)/bin:\$PATH"
+    # Ensure tsx is available (preferred TS runner for PM2 - no ecosystem.config.js injection needed)
+    echo "[INFO] Ensuring tsx / ts-node / typescript support for PM2..."
+    npm install tsx ts-node typescript 2>/dev/null || true
+    npm install -g tsx ts-node typescript 2>/dev/null || true
+    export PATH="\$(npm root -g 2>/dev/null | sed 's|/lib/node_modules||')/.bin:\$PWD/node_modules/.bin:\$PATH"
 
-    # Inject interpreter into ecosystem.config.js so PM2 knows how to run .ts files
-    node -e '
-        const fs = require("fs");
-        if (fs.existsSync("ecosystem.config.js")) {
-            let content = fs.readFileSync("ecosystem.config.js", "utf8");
-            let tsNodeBin = "";
-            try {
-                tsNodeBin = require("child_process").execSync("which ts-node 2>/dev/null").toString().trim();
-            } catch (e) {}
-            if (!tsNodeBin && fs.existsSync("./node_modules/.bin/ts-node")) {
-                tsNodeBin = "./node_modules/.bin/ts-node";
-            }
-            if (!tsNodeBin) tsNodeBin = "ts-node";
+    # Determine the best TS runner available
+    TSX_BIN=""
+    if command -v tsx >/dev/null 2>&1; then
+        TSX_BIN="\$(command -v tsx)"
+    elif [ -f "\$PWD/node_modules/.bin/tsx" ]; then
+        TSX_BIN="\$PWD/node_modules/.bin/tsx"
+    elif command -v ts-node >/dev/null 2>&1; then
+        TSX_BIN="\$(command -v ts-node)"
+    elif [ -f "\$PWD/node_modules/.bin/ts-node" ]; then
+        TSX_BIN="\$PWD/node_modules/.bin/ts-node"
+    fi
+    echo "[INFO] Using TS runner: \${TSX_BIN:-none (fallback to node)}"
 
-            if (content.includes(".ts") && !content.includes("interpreter:")) {
-                content = content.replace(/(script[\\s]*:[\\s]*[\\x27"][^\\x27"]+\\.ts[\\x27"])/g, function(match) {
-                    return match + ",\\n      interpreter: \\"" + tsNodeBin + "\\"";
-                });
-                fs.writeFileSync("ecosystem.config.js", content);
-                console.log("[INFO] Configured interpreter: " + tsNodeBin + " in ecosystem.config.js");
-            }
-        }
-    ' || true
+    # Inject interpreter into ecosystem.config.js using Python (safe, no shell escaping issues)
+    if [ -f "ecosystem.config.js" ] && [ -n "\$TSX_BIN" ]; then
+        python3 - <<PYEOF
+import re, os
+path = "ecosystem.config.js"
+content = open(path).read()
+ts_bin = os.environ.get("TSX_BIN", "tsx")
+if ".ts" in content and "interpreter:" not in content:
+    # Insert interpreter after each .ts script line (handles both single and double quotes)
+    patched = re.sub(
+        r"(script\s*:\s*['\"][^'\"]+\.ts['\"])",
+        r"\1,\n      interpreter: '" + ts_bin + "'",
+        content
+    )
+    if patched != content:
+        open(path, "w").write(patched)
+        print("[INFO] Injected interpreter: " + ts_bin + " into ecosystem.config.js")
+    else:
+        print("[INFO] ecosystem.config.js already up to date, no injection needed")
+else:
+    print("[INFO] Skipping interpreter injection (no .ts entries or no TS runner found)")
+PYEOF
+    fi
 
     echo "Executing cron master daemon launcher: ${start_command}..."
     ${start_command}
