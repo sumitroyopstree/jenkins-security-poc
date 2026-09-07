@@ -2,11 +2,12 @@
 def cdpipeline = new opstree.cd.templates.ssh_pm2.ssh_pm2_deployment()
 
 def targetEnv  = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
+def artifactName = (env.artifact_name ?: params.artifact_name ?: env.image_tag ?: params.image_tag ?: 'latest').trim()
 def currentEnv = inventory.cd('HRC-Kollect-Client-Billing-BE', targetEnv)
 def ciEnv      = inventory.ci('HRC-Kollect-Client-Billing-BE', targetEnv)
 
 node('HRC-Kollect-Jenkins-Agent') {
-    currentBuild.description = "CD: HRC-Kollect-Client-Billing-BE | Env: ${targetEnv} | Artifact: ${params.artifact_name ?: 'latest'}"
+    currentBuild.description = "CD: HRC-Kollect-Client-Billing-BE | Env: ${targetEnv} | Artifact: ${artifactName}"
 
     cdpipeline.call([
         enable_jenkins_build_param_override     : true,
@@ -18,7 +19,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         artifact_s3_bucket_name                 : ciEnv.artifact_s3_bucket_name,
         artifact_s3_bucket_aws_region           : ciEnv.aws_region,
         artifact_s3_keypath_destination         : ciEnv.artifact_s3_keypath,
-        artifact_name                           : params.artifact_name ?: '',
+        artifact_name                           : artifactName,
         jenkins_aws_credentials_id              : ciEnv.credentials_id,
 
         // TARGET VM & ENVIRONMENT BINDINGS

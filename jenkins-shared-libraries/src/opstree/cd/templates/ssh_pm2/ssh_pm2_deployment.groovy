@@ -47,19 +47,13 @@ def call(Map step_params) {
         def start_command         = get_params_value(enableOverride, step_params, 'start_command') ?: 'dist/main.js'
         def health_check_endpoint = get_params_value(enableOverride, step_params, 'health_check_endpoint') ?: 'http://127.0.0.1:3200/api-v2/healthcheck'
 
-        // S3 Tarball resolution (supports artifact_name and image_tag)
+        // S3 Tarball resolution (supports artifact_name and image_tag, defaults to latest)
         def s3_bucket     = get_params_value(enableOverride, step_params, 'artifact_s3_bucket_name') ?: 'hrc-cicd-test-bucket'
         def s3_keypath    = get_params_value(enableOverride, step_params, 'artifact_s3_keypath_destination') ?: 'backend'
-        def artifact_name = get_params_value(enableOverride, step_params, 'artifact_name') ?: get_params_value(enableOverride, step_params, 'image_tag') ?: ''
+        def artifact_name = get_params_value(enableOverride, step_params, 'artifact_name') ?: get_params_value(enableOverride, step_params, 'image_tag') ?: 'latest'
 
-        echo "[DEBUG] Resolved Environment : ${environment_name}"
-        echo "[DEBUG] Resolved Server IP   : ${server_ip}"
-        echo "[DEBUG] Resolved Deploy Dir  : ${deploy_dir}"
-        echo "[DEBUG] Resolved Artifact    : ${artifact_name}"
-        echo "[DEBUG] Resolved S3 Bucket   : ${s3_bucket}/${s3_keypath}"
-
-        if (!artifact_name) {
-            error("[FATAL] Parameter 'artifact_name' could not be resolved! Check upstream CI or pass it in Build with Parameters.")
+        if (!artifact_name || artifact_name.trim() == '') {
+            artifact_name = 'latest'
         }
 
         if (!server_ip || !deploy_dir) {
@@ -167,8 +161,31 @@ if [ -f ".env" ]; then
 fi
 
 # 4. Pull bundle from S3
-echo "[3/6] Fetching artifact from S3: s3://${s3_bucket}/${s3_keypath}/${artifact_name}..."
-aws s3 cp "s3://${s3_bucket}/${s3_keypath}/${artifact_name}" /tmp/release.tar.gz --region "${secret_region}"
+TARGET_ARTIFACT="${artifact_name}"
+if [ "\$TARGET_ARTIFACT" = "latest" ] || [ -z "\$TARGET_ARTIFACT" ]; then
+    echo "Resolving latest release artifact from s3://${s3_bucket}/${s3_keypath}/..."
+    LATEST_FILE=\$(aws s3 ls "s3://${s3_bucket}/${s3_keypath}/" --region "${secret_region}" | grep -E '\.tar\.gz$' | sort -k1,2 | tail -n 1 | awk '{print \$4}')
+    if [ -n "\$LATEST_FILE" ]; then
+        echo "[SUCCESS] Auto-resolved latest artifact: \$LATEST_FILE"
+        TARGET_ARTIFACT="\$LATEST_FILE"
+    else
+        echo "[ERROR] No .tar.gz artifacts found in s3://${s3_bucket}/${s3_keypath}/"
+        exit 1
+    fi
+elif [[ "\$TARGET_ARTIFACT" != *.tar.gz ]]; then
+    echo "Searching for artifact matching tag '\$TARGET_ARTIFACT' in s3://${s3_bucket}/${s3_keypath}/..."
+    MATCHED_FILE=\$(aws s3 ls "s3://${s3_bucket}/${s3_keypath}/" --region "${secret_region}" | grep -E "\$TARGET_ARTIFACT" | grep -E '\.tar\.gz$' | tail -n 1 | awk '{print \$4}')
+    if [ -n "\$MATCHED_FILE" ]; then
+        echo "[SUCCESS] Resolved tag '\$TARGET_ARTIFACT' to file: \$MATCHED_FILE"
+        TARGET_ARTIFACT="\$MATCHED_FILE"
+    else
+        echo "[INFO] No wildcard match found, attempting with standard naming pattern..."
+        TARGET_ARTIFACT="\${TARGET_ARTIFACT}.tar.gz"
+    fi
+fi
+
+echo "[3/6] Fetching artifact from S3: s3://${s3_bucket}/${s3_keypath}/\$TARGET_ARTIFACT..."
+aws s3 cp "s3://${s3_bucket}/${s3_keypath}/\$TARGET_ARTIFACT" /tmp/release.tar.gz --region "${secret_region}"
 
 # 5. Extract bundle
 echo "[4/6] Unpacking release bundle..."
