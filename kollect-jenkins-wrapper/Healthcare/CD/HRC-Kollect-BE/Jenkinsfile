@@ -31,7 +31,6 @@ node('HRC-Kollect-Jenkins-Agent') {
         secret_region                           : 'us-east-1',
         run_db_migration                        : true,
         start_command                           : 'yarn start',
-        health_check_endpoint                   : 'http://127.0.0.1:80/api/health',
 
         // NOTIFICATIONS
         notification_enabled                    : true,
