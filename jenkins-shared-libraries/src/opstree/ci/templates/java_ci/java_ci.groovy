@@ -80,7 +80,10 @@ def call(Map step_params) {
                                         source_code_path: "${get_params_value(enableOverride, step_params, 'source_code_path')}",
                                         app_stack: "${get_params_value(enableOverride, step_params, 'app_stack')}",
                                         pom_location: "${get_params_value(enableOverride, step_params, 'pom_location')}",
-                                        nvd_api_key_creds_id: "${get_params_value(enableOverride, step_params, 'nvd_api_key_creds_id')}"
+                                        nvd_api_key_creds_id: "${get_params_value(enableOverride, step_params, 'nvd_api_key_creds_id')}",
+                                        disable_yarn_audit: "${get_params_value(enableOverride, step_params, 'disable_yarn_audit')}",
+                                        disable_node_audit: "${get_params_value(enableOverride, step_params, 'disable_node_audit')}",
+                                        owasp_extra_args: "${get_params_value(enableOverride, step_params, 'owasp_extra_args')}"
                                 )
                     }
                         }

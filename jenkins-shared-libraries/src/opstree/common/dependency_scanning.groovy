@@ -32,6 +32,9 @@ def dependency_scan(Map step_params) {
     def source_code_path    = "${step_params.source_code_path ?: ''}"
     def app_stack           = "${step_params.app_stack ?: ''}"
     def pom_location        = "${step_params.pom_location ?: ''}"
+    def disable_yarn_audit  = "${step_params.disable_yarn_audit ?: ''}"
+    def disable_node_audit  = "${step_params.disable_node_audit ?: ''}"
+    def owasp_extra_args    = "${step_params.owasp_extra_args ?: ''}"
 
     def repo_dir = parser.fetch_git_repo_name('repo_url':"${repo_url}")
 
@@ -91,13 +94,19 @@ def dependency_scan(Map step_params) {
         // -- Helper closure: run the actual scan with optional NVD key --------
         def runOwaspScan = { String extraFlags ->
             def experimentalFlag = (app_stack == 'python' || app_stack == 'angular') ? '--enableExperimental' : ''
+            def disableYarnFlag  = (disable_yarn_audit == 'true') ? '--disableYarnAudit' : ''
+            def disableNodeFlag  = (disable_node_audit == 'true') ? '--disableNodeAudit' : ''
+            
+            def combinedFlagsList = [extraFlags, owasp_extra_args, disableYarnFlag, disableNodeFlag].findAll { it?.trim() }
+            def combinedFlagsStr  = combinedFlagsList ? combinedFlagsList.join(' ') + ' ' : ''
+
             if (nvd_api_key_creds_id?.trim()) {
                 withCredentials([string(credentialsId: "${nvd_api_key_creds_id}", variable: 'NVD_API_KEY')]) {
-                    def owaspScanArgs = "--format ALL --project '${owasp_project_name}' --out /reports ${extraFlags} --nvdApiKey \${NVD_API_KEY} ${experimentalFlag}"
+                    def owaspScanArgs = "--format ALL --project '${owasp_project_name}' --out /reports ${combinedFlagsStr}--nvdApiKey \${NVD_API_KEY} ${experimentalFlag}".trim()
                     sh "${owaspDockerBase} ${owaspSrcVol} ${owaspDataVol} ${owaspReportsVol} owasp/dependency-check:${owasp_version} --scan /src ${owaspScanArgs}"
                 }
             } else {
-                def owaspScanArgs = "--format ALL --project '${owasp_project_name}' --out /reports ${extraFlags} ${experimentalFlag}"
+                def owaspScanArgs = "--format ALL --project '${owasp_project_name}' --out /reports ${combinedFlagsStr}${experimentalFlag}".trim()
                 sh "${owaspDockerBase} ${owaspSrcVol} ${owaspDataVol} ${owaspReportsVol} owasp/dependency-check:${owasp_version} --scan /src ${owaspScanArgs}"
             }
         }
@@ -124,6 +133,19 @@ def dependency_scan(Map step_params) {
                         throw retryEx
                     } else {
                         logger.logger('msg':"Dependency Scanning Failed after purge+retry: [IGNORING] ${retryEx}", 'level':'WARN')
+                    }
+                }
+            } else if (e.message?.contains('exit code 14') || e.message?.contains('Yarn Classic')) {
+                logger.logger('msg':'OWASP Yarn Classic audit analyzer failed (exit code 14 - Yarn Berry / offline lockfile mismatch). Retrying scan with --disableYarnAudit...', 'level':'WARN')
+                try {
+                    disable_yarn_audit = 'true'
+                    runOwaspScan(noUpdateFlag)
+                } catch (Exception retryEx) {
+                    if (fail_job_if_dependency_returned_exception == 'true') {
+                        logger.logger('msg':"Dependency Scanning Failed after Yarn audit disable retry: ${retryEx}", 'level':'ERROR')
+                        throw retryEx
+                    } else {
+                        logger.logger('msg':"Dependency Scanning Failed after Yarn audit disable retry: [IGNORING] ${retryEx}", 'level':'WARN')
                     }
                 }
             } else {

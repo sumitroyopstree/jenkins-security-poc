@@ -34,6 +34,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         owasp_report_format                       : 'html',
         fail_job_if_dependency_returned_exception : 'false',
         nvd_api_key_creds_id                      : 'NVD_API_KEY',
+        disable_yarn_audit                        : 'true',
 
         // BUILD & PACKAGE ARTIFACT (NODE.JS)
         perform_code_build               : true,
