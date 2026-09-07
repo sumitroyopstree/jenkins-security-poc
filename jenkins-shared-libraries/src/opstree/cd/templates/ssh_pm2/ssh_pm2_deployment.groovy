@@ -322,24 +322,31 @@ if [[ "${start_command}" == *"start-crons"* ]]; then
     # Inject interpreter into ecosystem.config.js using Python (safe, no shell escaping issues)
     if [ -f "ecosystem.config.js" ] && [ -n "\$TSX_BIN" ]; then
         python3 - <<PYEOF
-import re, os
+import os
 path = "ecosystem.config.js"
-content = open(path).read()
-ts_bin = os.environ.get("TSX_BIN", "tsx")
-if ".ts" in content and "interpreter:" not in content:
-    # Insert interpreter after each .ts script line (handles both single and double quotes)
-    patched = re.sub(
-        r"(script\s*:\s*['\"][^'\"]+\.ts['\"])",
-        r"\1,\n      interpreter: '" + ts_bin + "'",
-        content
-    )
-    if patched != content:
-        open(path, "w").write(patched)
-        print("[INFO] Injected interpreter: " + ts_bin + " into ecosystem.config.js")
-    else:
-        print("[INFO] ecosystem.config.js already up to date, no injection needed")
+if not os.path.exists(path):
+    print("[INFO] No ecosystem.config.js found, skipping injection")
 else:
-    print("[INFO] Skipping interpreter injection (no .ts entries or no TS runner found)")
+    content = open(path).read()
+    if "interpreter:" in content:
+        print("[INFO] interpreter already configured in ecosystem.config.js")
+    else:
+        ts_bin = os.environ.get("TSX_BIN", "tsx")
+        lines = content.split("\\n")
+        out = []
+        modified = False
+        for line in lines:
+            out.append(line)
+            s = line.strip().rstrip(",")
+            if "script" in s and (".ts'" in s or '.ts"' in s):
+                indent = " " * (len(line) - len(line.lstrip()) + 2)
+                out.append(indent + "interpreter: '" + ts_bin + "',")
+                modified = True
+        if modified:
+            open(path, "w").write("\\n".join(out))
+            print("[INFO] Injected interpreter: " + ts_bin + " into ecosystem.config.js")
+        else:
+            print("[INFO] No .ts script entries found, no injection needed")
 PYEOF
     fi
 
