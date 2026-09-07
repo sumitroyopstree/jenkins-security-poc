@@ -46,6 +46,7 @@ def call(Map step_params) {
         def run_db_migration      = get_params_value(enableOverride, step_params, 'run_db_migration') ?: false
         def start_command         = get_params_value(enableOverride, step_params, 'start_command') ?: 'dist/main.js'
         def health_check_endpoint = get_params_value(enableOverride, step_params, 'health_check_endpoint') ?: 'http://127.0.0.1:3200/api-v2/healthcheck'
+        def pm2_services_list     = step_params.pm2_services_list instanceof List ? step_params.pm2_services_list : []
 
         // S3 Tarball resolution (supports artifact_name and image_tag, defaults to latest)
         def s3_bucket     = get_params_value(enableOverride, step_params, 'artifact_s3_bucket_name') ?: 'hrc-cicd-test-bucket'
@@ -109,6 +110,13 @@ def call(Map step_params) {
                         ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes ubuntu@${server_ip} 'echo "[SUCCESS] Connected to \$(hostname)"'
                     """
 
+                    def deleteServicesScript = ""
+                    if (pm2_services_list && !pm2_services_list.isEmpty()) {
+                        deleteServicesScript = pm2_services_list.collect { svc ->
+                            "\\\$PM2_BIN delete \"${svc}\" 2>/dev/null || true"
+                        }.join("\n")
+                    }
+
                     def deployScript = """
 set -e
 echo "=========================================================="
@@ -139,6 +147,7 @@ echo "Using PM2: \$PM2_BIN | Node: \$(node -v 2>/dev/null || echo 'not found')"
 # 2. Stop PM2 process
 echo "[1/6] Stopping existing PM2 process..."
 \$PM2_BIN delete "${app_name}" 2>/dev/null || true
+${deleteServicesScript}
 
 # 3. Directory setup & backup
 echo "[2/6] Preparing deployment directory..."
@@ -281,7 +290,14 @@ fi
 # 7. Launch Application under PM2
 echo "[6/6] Launching PM2 process for ${app_name}..."
 
-if [ -n "${start_command}" ]; then
+if [[ "${start_command}" == *"start-crons"* ]]; then
+    echo "Executing cron master daemon launcher: ${start_command}..."
+    if [ ! -d "node_modules" ]; then
+        echo "Installing production dependencies for cron..."
+        npm install --omit=dev 2>/dev/null || npm install 2>/dev/null || true
+    fi
+    ${start_command}
+elif [ -n "${start_command}" ]; then
     echo "Starting via configured start_command: ${start_command}"
     \$PM2_BIN start "${start_command}" --name "${app_name}" --update-env
 elif [ -f "dist/main.js" ]; then
@@ -319,6 +335,9 @@ EOF
 
             stage('Health Check') {
                 def healthStatus = 0
+                def isCronMultiService = (pm2_services_list && !pm2_services_list.isEmpty())
+                def cronServicesStr = isCronMultiService ? pm2_services_list.join(' ') : ''
+
                 sshagent([ssh_credentials_id]) {
                     healthStatus = sh(
                         returnStatus: true,
@@ -330,9 +349,31 @@ nvm use ${node_version} 2>/dev/null || true
 export PATH="/usr/local/bin:/usr/bin:\$HOME/.nvm/versions/node/\$(node -v 2>/dev/null)/bin:\$PATH"
 PM2_BIN=\$(which pm2 2>/dev/null || echo "/usr/local/bin/pm2")
 
-echo "Verifying health on ${health_check_endpoint}..."
 HEALTHY=false
 HTTP_STATUS=""
+""" + (isCronMultiService ? """
+echo "Verifying health for ${pm2_services_list.size()} PM2 Cron services..."
+for attempt in \$(seq 1 6); do
+    echo "Health Check Attempt \$attempt/6..."
+    ALL_UP=true
+    for svc in ${cronServicesStr}; do
+        SVC_STATUS=\$(\$PM2_BIN jlist 2>/dev/null | jq -r ".[] | select(.name==\\\"\$svc\\\") | .pm2_env.status" 2>/dev/null | head -n 1)
+        if [ -z "\$SVC_STATUS" ] || [ "\$SVC_STATUS" = "null" ]; then
+            SVC_STATUS=\$(\$PM2_BIN status | grep -w "\$svc" | grep -o 'online' || echo 'offline')
+        fi
+        echo "  - Cron Service '\$svc': \$SVC_STATUS"
+        if [ "\$SVC_STATUS" != "online" ]; then
+            ALL_UP=false
+        fi
+    done
+    if [ "\$ALL_UP" = "true" ]; then
+        HEALTHY=true
+        break
+    fi
+    sleep 3
+done
+""" : """
+echo "Verifying health on ${health_check_endpoint}..."
 for i in \$(seq 1 15); do
     HTTP_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" "${health_check_endpoint}" || true)
     echo "Check \$i/15: Endpoint HTTP Status = \$HTTP_STATUS"
@@ -343,10 +384,10 @@ for i in \$(seq 1 15); do
     fi
     sleep 3
 done
-
+""") + """
 if [ "\$HEALTHY" = "true" ]; then
     echo "=========================================================="
-    echo "SUCCESS: ${app_name} is running and reachable (HTTP \$HTTP_STATUS)."
+    echo "SUCCESS: ${app_name} is running and healthy."
     echo "=========================================================="
     cd "${deploy_dir}"
     rm -rf dist.bak

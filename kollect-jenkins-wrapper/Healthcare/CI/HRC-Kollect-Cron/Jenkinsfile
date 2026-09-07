@@ -36,15 +36,30 @@ node('HRC-Kollect-Jenkins-Agent') {
         nvd_api_key_creds_id                      : 'NVD_API_KEY',
         disable_yarn_audit                        : 'true',
 
-        // BUILD & PACKAGE ARTIFACT (NODE.JS / Cron - No Compile Step)
+        // BUILD & PACKAGE ARTIFACT (NODE.JS / Cron - Node 18 & NPM)
         perform_code_build               : true,
-        node_version                     : '20',
-        package_manager                  : 'yarn',
+        node_version                     : '18',
+        package_manager                  : 'npm',
         app_name                         : 'hrc-kollect-cron',
-        build_command                    : 'echo "No build step required for cron scheduler"',
-        build_output_path                : 'src',
+        build_command                    : 'echo "Preparing cron scheduler package"',
+        build_output_path                : 'start-crons.js',
         include_node_modules             : true,
         prune_dev_dependencies           : false,
+        additional_artifact_paths        : [
+            'src',
+            'config',
+            'jobs',
+            'cron',
+            'services',
+            'utils',
+            'helpers',
+            'scripts',
+            'routes',
+            'models',
+            'controllers',
+            'package.json',
+            'package-lock.json'
+        ],
 
         // UNIT TEST & CODE COVERAGE
         unit_testing_check               : 'true',
