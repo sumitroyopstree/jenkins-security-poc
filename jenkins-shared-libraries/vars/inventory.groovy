@@ -7,19 +7,37 @@ def call(String type, String appName, String envName = 'TEST') {
     def env = (envName ?: 'TEST').toUpperCase()
 
     // --------------------------------------------------------------------------
-    // 1. CI INVENTORY DATA MAP (S3 Buckets, Regions, Credentials)
+    // 1. S3 ARTIFACT STORAGE MAP (Buckets, Regions, Credentials)
     // --------------------------------------------------------------------------
-    def ciData = [
-        'TEST': [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials', ecr_region: 'us-east-1', account_id: '167121004129'],
-        'DEV' : [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials', ecr_region: 'us-east-1', account_id: '167121004129'],
-        'QA'  : [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials', ecr_region: 'us-east-1', account_id: '167121004129'],
-        'DEMO': [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials', ecr_region: 'us-east-1', account_id: '167121004129'],
-        'STG' : [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials', ecr_region: 'us-east-1', account_id: '167121004129'],
-        'PROD': [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials', ecr_region: 'us-east-1', account_id: '167121004129']
+    def s3Data = [
+        'TEST': [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials'],
+        'DEV' : [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials'],
+        'QA'  : [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials'],
+        'DEMO': [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials'],
+        'STG' : [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials'],
+        'PROD': [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials']
     ]
 
     // --------------------------------------------------------------------------
-    // 2. CD INVENTORY DATA MAP (VM IPs, Deploy Paths, App Names, Secrets, S3/CloudFront)
+    // 2. ECR DOCKER REGISTRY MAP (Account IDs, Regions, Credentials & Repos)
+    // --------------------------------------------------------------------------
+    def ecrData = [
+        'TEST': [account_id: '167121004129', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials'],
+        'DEV' : [account_id: '167121004129', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials'],
+        'QA'  : [account_id: '167121004129', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials'],
+        'DEMO': [account_id: '167121004129', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials'],
+        'STG' : [account_id: '167121004129', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials'],
+        'PROD': [account_id: '167121004129', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials']
+    ]
+
+    // Application to ECR Repository Mapping
+    def ecrRepos = [
+        'HRC-AMD-Sync-Service'       : 'hrc-kollect-cicd/apps',
+        'HRC-Kollect-Reporting-Module': 'hrc-kollect-cicd/apps'
+    ]
+
+    // --------------------------------------------------------------------------
+    // 3. CD DEPLOYMENT DATA MAP (VM IPs, Deploy Paths, App Names, Secrets, S3/CloudFront)
     // --------------------------------------------------------------------------
     def cdData = [
         // HEALTHCARE JOBS
@@ -67,7 +85,7 @@ def call(String type, String appName, String envName = 'TEST') {
             'TEST': [ip: '10.2.30.254', path: '/opt/hrc-kollect-test/frontdesk-backend', app: 'hrc-kollect-frontdesk-backend-test', ssh: 'HRC-Kollect-Test-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.hrckollect.com-tDjPIP'],
             'DEV' : [ip: '10.2.40.133', path: '/opt/hrc-kollect-dev/frontdesk-backend', app: 'hrc-kollect-frontdesk-backend-dev', ssh: 'HRC-Kollect-Dev-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.hrckollect.com-tDjPIP'],
             'QA'  : [ip: '10.2.10.111', path: '/opt/hrc-kollect-qa/frontdesk-backend', app: 'hrc-kollect-frontdesk-backend-qa', ssh: 'HRC-Kollect-QA-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:qa-hrckollect-com-0mHt87'],
-            'DEMO': [ip: '10.2.40.238', path: '/opt/hrc-kollect-demo/frontdesk-backend', app: 'hrc-kollect-frontdesk-backend-demo', ssh: 'HRC-Kollect-Demo-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:demo-new-hrckollect-com-KrSHaN'],
+            'DEMO': [ip: '10.2.40.238', path: '/opt/hrc-kollect-demo/frontdesk-backend', app: 'hrc-kollect-demo-backend', ssh: 'HRC-Kollect-Demo-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:demo-new-hrckollect-com-KrSHaN'],
             'STG' : [ip: '10.2.40.170', path: '/opt/hrc-kollect-stg/frontdesk-backend', app: 'hrc-kollect-frontdesk-backend-stg', ssh: 'HRC-Kollect-Stg-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:stg-hrckollect-com-oLPno0'],
             'PROD': [ip: '10.2.10.118', path: '/opt/hrc-kollect-prod/frontdesk-backend', app: 'hrc-kollect-frontdesk-backend-prod', ssh: 'HRC-Kollect-PROD-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:portal.hrckollect.com-xvlUjU']
         ],
@@ -75,7 +93,7 @@ def call(String type, String appName, String envName = 'TEST') {
             'TEST': [ip: '10.2.30.254', path: '/opt/hrc-kollect-test/pay-portal-backend', app: 'hrc-kollect-pay-portal-backend-test', ssh: 'HRC-Kollect-Test-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.hrckollect.com-tDjPIP'],
             'DEV' : [ip: '10.2.40.133', path: '/opt/hrc-kollect-dev/pay-portal-backend', app: 'hrc-kollect-pay-portal-backend-dev', ssh: 'HRC-Kollect-Dev-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.hrckollect.com-tDjPIP'],
             'QA'  : [ip: '10.2.10.111', path: '/opt/hrc-kollect-qa/pay-portal-backend', app: 'hrc-kollect-pay-portal-backend-qa', ssh: 'HRC-Kollect-QA-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:qa-hrckollect-com-0mHt87'],
-            'DEMO': [ip: '10.2.40.238', path: '/opt/hrc-kollect-demo/pay-portal-backend', app: 'hrc-kollect-pay-portal-backend-demo', ssh: 'HRC-Kollect-Demo-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:demo-new-hrckollect-com-KrSHaN'],
+            'DEMO': [ip: '10.2.40.238', path: '/opt/hrc-kollect-demo/pay-portal-backend', app: 'hrc-kollect-demo-backend', ssh: 'HRC-Kollect-Demo-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:demo-new-hrckollect-com-KrSHaN'],
             'STG' : [ip: '10.2.40.170', path: '/opt/hrc-kollect-stg/pay-portal-backend', app: 'hrc-kollect-pay-portal-backend-stg', ssh: 'HRC-Kollect-Stg-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:stg-hrckollect-com-oLPno0'],
             'PROD': [ip: '10.2.10.118', path: '/opt/hrc-kollect-prod/pay-portal-backend', app: 'hrc-kollect-pay-portal-backend-prod', ssh: 'HRC-Kollect-PROD-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:portal.hrckollect.com-xvlUjU']
         ],
@@ -116,17 +134,37 @@ def call(String type, String appName, String envName = 'TEST') {
     ]
 
     // --------------------------------------------------------------------------
-    // RETURN CONFIG MAP BASED ON TYPE (CI vs CD)
+    // RETURN CONFIG MAP BASED ON TYPE (CI, CD, ECR)
     // --------------------------------------------------------------------------
     if (type.toUpperCase() == 'CI') {
-        def item = ciData[env] ?: ciData['TEST']
+        def s3Item  = s3Data[env] ?: s3Data['TEST']
+        def ecrItem = ecrData[env] ?: ecrData['TEST']
+        def repo    = ecrRepos[appName] ?: ''
         return [
-            artifact_s3_bucket_name: item.bucket,
+            // S3 Artifact Config
+            artifact_s3_bucket_name: s3Item.bucket,
             artifact_s3_keypath    : appName,
-            aws_region             : item.region,
-            credentials_id         : item.creds,
-            ecr_region             : item.ecr_region,
-            account_id             : item.account_id
+            aws_region             : s3Item.region,
+            credentials_id         : s3Item.creds,
+
+            // ECR Docker Config
+            ecr_repo_name          : repo,
+            ecr_repo               : repo,
+            ecr_region             : ecrItem.region,
+            account_id             : ecrItem.account_id,
+            ecr_account            : ecrItem.account_id,
+            ecr_credentials_id     : ecrItem.creds
+        ]
+    } else if (type.toUpperCase() == 'ECR') {
+        def ecrItem = ecrData[env] ?: ecrData['TEST']
+        def repo    = ecrRepos[appName] ?: ''
+        return [
+            ecr_repo_name          : repo,
+            ecr_repo               : repo,
+            ecr_region             : ecrItem.region,
+            account_id             : ecrItem.account_id,
+            ecr_account            : ecrItem.account_id,
+            credentials_id         : ecrItem.creds
         ]
     } else {
         def appMap = cdData[appName] ?: [:]
@@ -140,9 +178,9 @@ def call(String type, String appName, String envName = 'TEST') {
             app_name       : item.app,
             ssh_creds      : item.ssh,
             secret_arn     : item.secret,
-            ecr_repo       : item.ecr,
-            ecr_account    : item.ecr_account,
-            ecr_region     : item.ecr_region,
+            ecr_repo       : item.ecr ?: (ecrRepos[appName] ?: ''),
+            ecr_account    : item.ecr_account ?: (ecrData[env]?.account_id ?: '167121004129'),
+            ecr_region     : item.ecr_region ?: (ecrData[env]?.region ?: 'us-east-1'),
             container_port : item.container_port,
             host_port      : item.host_port,
             k1_url         : item.k1_url ?: 'https://dev.hrckollect.com'
@@ -157,4 +195,8 @@ def ci(String appName, String envName = 'TEST') {
 
 def cd(String appName, String envName = 'TEST') {
     return call('CD', appName, envName)
+}
+
+def ecr(String appName, String envName = 'TEST') {
+    return call('ECR', appName, envName)
 }
