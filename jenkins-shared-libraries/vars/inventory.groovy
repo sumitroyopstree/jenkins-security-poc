@@ -10,12 +10,12 @@ def call(String type, String appName, String envName = 'TEST') {
     // 1. CI INVENTORY DATA MAP (S3 Buckets, Regions, Credentials)
     // --------------------------------------------------------------------------
     def ciData = [
-        'TEST': [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials'],
-        'DEV' : [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials'],
-        'QA'  : [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials'],
-        'DEMO': [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials'],
-        'STG' : [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials'],
-        'PROD': [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials']
+        'TEST': [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials', ecr_region: 'us-east-1', account_id: '167121004129'],
+        'DEV' : [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials', ecr_region: 'us-east-1', account_id: '167121004129'],
+        'QA'  : [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials', ecr_region: 'us-east-1', account_id: '167121004129'],
+        'DEMO': [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials', ecr_region: 'us-east-1', account_id: '167121004129'],
+        'STG' : [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials', ecr_region: 'us-east-1', account_id: '167121004129'],
+        'PROD': [bucket: 'hrc-cicd-test-bucket', region: 'us-east-1', creds: 'hrc-aws-ecr-credentials', ecr_region: 'us-east-1', account_id: '167121004129']
     ]
 
     // --------------------------------------------------------------------------
@@ -88,12 +88,12 @@ def call(String type, String appName, String envName = 'TEST') {
             'PROD': [ip: '10.2.10.118', ssh: 'HRC-Kollect-PROD-Server', app: 'kollect-reporting-module-prod']
         ],
         'HRC-AMD-Sync-Service': [
-            'TEST': [ip: '10.2.30.254', ssh: 'HRC-Kollect-Test-Server', app: 'hrc-amd-sync-service-test', ecr: 'hrc-kollect-cicd/apps'],
-            'DEV' : [ip: '10.2.40.133', ssh: 'HRC-Kollect-Dev-Server',  app: 'hrc-amd-sync-service-dev',  ecr: 'hrc-amd-sync-service-dev'],
-            'QA'  : [ip: '10.2.10.111', ssh: 'HRC-Kollect-QA-Server',   app: 'hrc-amd-sync-service-qa',   ecr: 'hrc-amd-sync-service-qa'],
-            'DEMO': [ip: '10.2.1.23',   ssh: 'HRC-AMD-Kollect-Mediator-DEV', app: 'hrc-amd-sync-service-demo', ecr: 'hrc-amd-sync-service-qa'],
-            'STG' : [ip: '10.2.40.170', ssh: 'HRC-Kollect-Stg-Server',  app: 'hrc-amd-sync-service-stg',  ecr: 'hrc-amd-sync-service-stg'],
-            'PROD': [ip: '10.2.10.118', ssh: 'HRC-Kollect-PROD-Server', app: 'hrc-amd-sync-service-prod', ecr: 'hrc-amd-sync-service-prod']
+            'TEST': [ip: '10.2.30.254', ssh: 'HRC-Kollect-Test-Server', app: 'hrc-amd-sync-service-test', ecr: 'hrc-kollect-cicd/apps', ecr_account: '167121004129', ecr_region: 'us-east-1', container_port: 8082, host_port: 8182],
+            //'DEV' : [ip: '10.2.40.133', ssh: 'HRC-Kollect-Dev-Server',  app: 'hrc-amd-sync-service-dev',  ecr: 'hrc-amd-sync-service-dev',  ecr_account: '167121004129', ecr_region: 'us-east-1', container_port: 8082, host_port: 8182],
+            //'QA'  : [ip: '10.2.10.111', ssh: 'HRC-Kollect-QA-Server',   app: 'hrc-amd-sync-service-qa',   ecr: 'hrc-amd-sync-service-qa',   ecr_account: '167121004129', ecr_region: 'us-east-1', container_port: 8082, host_port: 8182],
+            //'DEMO': [ip: '10.2.1.23',   ssh: 'HRC-AMD-Kollect-Mediator-DEV', app: 'hrc-amd-sync-service-demo', ecr: 'hrc-amd-sync-service-qa', ecr_account: '167121004129', ecr_region: 'us-east-1', container_port: 8082, host_port: 8182],
+            //'STG' : [ip: '10.2.40.170', ssh: 'HRC-Kollect-Stg-Server',  app: 'hrc-amd-sync-service-stg',  ecr: 'hrc-amd-sync-service-stg',  ecr_account: '167121004129', ecr_region: 'us-east-1', container_port: 8082, host_port: 8182],
+            //'PROD': [ip: '10.2.10.118', ssh: 'HRC-Kollect-PROD-Server', app: 'hrc-amd-sync-service-prod', ecr: 'hrc-amd-sync-service-prod', ecr_account: '167121004129', ecr_region: 'us-east-1', container_port: 8082, host_port: 8182]
         ],
 
         // NON-HEALTHCARE JOBS
@@ -124,7 +124,9 @@ def call(String type, String appName, String envName = 'TEST') {
             artifact_s3_bucket_name: item.bucket,
             artifact_s3_keypath    : appName,
             aws_region             : item.region,
-            credentials_id         : item.creds
+            credentials_id         : item.creds,
+            ecr_region             : item.ecr_region,
+            account_id             : item.account_id
         ]
     } else {
         def appMap = cdData[appName] ?: [:]
@@ -133,12 +135,16 @@ def call(String type, String appName, String envName = 'TEST') {
             return item
         }
         return [
-            server_ip  : item.ip,
-            deploy_dir : item.path,
-            app_name   : item.app,
-            ssh_creds  : item.ssh,
-            secret_arn : item.secret,
-            ecr_repo   : item.ecr
+            server_ip      : item.ip,
+            deploy_dir     : item.path,
+            app_name       : item.app,
+            ssh_creds      : item.ssh,
+            secret_arn     : item.secret,
+            ecr_repo       : item.ecr,
+            ecr_account    : item.ecr_account,
+            ecr_region     : item.ecr_region,
+            container_port : item.container_port,
+            host_port      : item.host_port
         ]
     }
 }

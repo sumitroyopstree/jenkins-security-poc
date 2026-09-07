@@ -7,28 +7,37 @@ def currentEnv = inventory.cd('HRC-AMD-Sync-Service', targetEnv)
 node('HRC-Kollect-Jenkins-Agent') {
     currentBuild.description = "CD: HRC-AMD-Sync-Service | Env: ${targetEnv} | Tag: ${imageTag}"
 
+    // APPROVAL GATE - Required before deployment
+    stage('Approval') {
+        input(
+            id      : 'deploy-approval',
+            message : "Deploy hrc-amd-sync-service:${imageTag} to ${targetEnv}?",
+            ok      : 'Approve & Deploy'
+        )
+    }
+
     def cdPipeline = new opstree.cd.templates.docker_ecr.docker_deployment()
     cdPipeline.call([
-        enable_jenkins_build_param_override: true,
+        enable_jenkins_build_param_override     : true,
 
         // WORKSPACE MANAGEMENT
-        clean_workspace                     : true,
+        clean_workspace                         : true,
 
         // APPLICATION / CONTAINER NAME
-        app_name                            : currentEnv.app_name,
-        
+        app_name                                : currentEnv.app_name,
+
         // TARGET SERVER
-        server_ip                           : currentEnv.server_ip,
-        ssh_credentials_id                  : currentEnv.ssh_creds,
+        server_ip                               : currentEnv.server_ip,
+        ssh_credentials_id                      : currentEnv.ssh_creds,
 
         // ECR
-        ecr_account                         : '167121004129',
-        ecr_region                          : 'us-east-1',
-        ecr_repo                            : currentEnv.ecr_repo ?: 'hrc-kollect-cicd/apps',
+        ecr_account                             : currentEnv.ecr_account,
+        ecr_region                              : currentEnv.ecr_region,
+        ecr_repo                                : currentEnv.ecr_repo,
 
         // PORTS
-        container_port                      : 8082,
-        host_port                           : 8182,
+        container_port                          : currentEnv.container_port,
+        host_port                               : currentEnv.host_port,
 
         // NOTIFICATIONS
         notification_enabled                    : true,

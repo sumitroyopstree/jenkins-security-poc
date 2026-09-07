@@ -70,8 +70,8 @@ node('HRC-Kollect-Jenkins-Agent') {
         artifact_destination_type               : 'ecr',
         jenkins_aws_credentials_id              : currentEnv.credentials_id,
         ecr_repo_name                           : cdEnv.ecr,
-        ecr_region                              : 'us-east-1',
-        account_id                              : '167121004129',
+        ecr_region                              : currentEnv.ecr_region,
+        account_id                              : currentEnv.account_id,
 
         // POST-BUILD CHECKS (TRIVY & SIZE VALIDATOR)
         image_scanning_check                    : true,
