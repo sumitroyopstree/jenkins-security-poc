@@ -9,7 +9,7 @@ node('HRC-Kollect-Jenkins-Agent') {
     cipipeline.call([
         enable_jenkins_build_param_override: true,
 
-        // WORKSPACE MANAGEMENT
+        // WORKSPACE MANAGEMENT1
         clean_workspace                  : true,
 
         // VCS MANAGEMENT
@@ -74,7 +74,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         // NOTIFICATION
         notification_enabled                    : true,
         notification_channel                    : 'gmail',
-        gmail_notification_from_email_id        : 'smtp@kernernorland.com',
+        gmail_notification_from_email_id        : 'jenkins@healthreconconnect.com',
         gmail_notification_recipients_email_ids : 'harinath.telukuntla@opstree.com'
     ])
 }
