@@ -26,7 +26,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         server_ip                               : currentEnv.server_ip,
         deploy_dir                              : currentEnv.deploy_dir,
         app_name                                : currentEnv.app_name,
-        node_version                            : 'v18.0.0',
+        node_version                            : 'v24.6.0',
         ssh_credentials_id                      : currentEnv.ssh_creds,
         secret_arn                              : currentEnv.secret_arn,
         secret_region                           : 'us-east-1',

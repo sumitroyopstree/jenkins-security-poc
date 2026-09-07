@@ -300,12 +300,34 @@ if [[ "${start_command}" == *"start-crons"* ]]; then
     echo "Ensuring node_modules dependencies are properly linked..."
     npm install --prefer-offline 2>/dev/null || npm install 2>/dev/null || true
 
-    # Ensure ts-node is available in PATH for PM2 TypeScript execution
-    if ! command -v ts-node >/dev/null 2>&1 && [ ! -x "./node_modules/.bin/ts-node" ]; then
-        echo "[INFO] Installing ts-node globally for PM2 TypeScript daemon support..."
-        npm install -g ts-node typescript 2>/dev/null || true
-        export PATH="\$(npm bin -g 2>/dev/null || echo ''):\$HOME/.nvm/versions/node/\$(node -v 2>/dev/null)/bin:\$PATH"
-    fi
+    # Ensure ts-node and typescript are installed globally for PM2 daemon
+    echo "[INFO] Ensuring ts-node / typescript support for PM2..."
+    npm install -g ts-node typescript tsx 2>/dev/null || npm install ts-node typescript tsx 2>/dev/null || true
+    export PATH="\$(npm bin -g 2>/dev/null || echo ''):\$HOME/.nvm/versions/node/\$(node -v 2>/dev/null)/bin:\$PATH"
+
+    # Inject interpreter into ecosystem.config.js so PM2 knows how to run .ts files
+    node -e '
+        const fs = require("fs");
+        if (fs.existsSync("ecosystem.config.js")) {
+            let content = fs.readFileSync("ecosystem.config.js", "utf8");
+            let tsNodeBin = "";
+            try {
+                tsNodeBin = require("child_process").execSync("which ts-node 2>/dev/null").toString().trim();
+            } catch (e) {}
+            if (!tsNodeBin && fs.existsSync("./node_modules/.bin/ts-node")) {
+                tsNodeBin = "./node_modules/.bin/ts-node";
+            }
+            if (!tsNodeBin) tsNodeBin = "ts-node";
+
+            if (content.includes(".ts") && !content.includes("interpreter:")) {
+                content = content.replace(/(script[\\s]*:[\\s]*[\\x27"][^\\x27"]+\\.ts[\\x27"])/g, function(match) {
+                    return match + ",\\n      interpreter: \\"" + tsNodeBin + "\\"";
+                });
+                fs.writeFileSync("ecosystem.config.js", content);
+                console.log("[INFO] Configured interpreter: " + tsNodeBin + " in ecosystem.config.js");
+            }
+        }
+    ' || true
 
     echo "Executing cron master daemon launcher: ${start_command}..."
     ${start_command}
