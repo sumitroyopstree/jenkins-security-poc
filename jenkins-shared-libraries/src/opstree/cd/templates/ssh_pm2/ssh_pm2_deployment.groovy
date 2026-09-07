@@ -336,12 +336,15 @@ else:
         out = []
         modified = False
         for line in lines:
-            out.append(line)
             s = line.strip().rstrip(",")
             if "script" in s and (".ts'" in s or '.ts"' in s):
-                indent = " " * (len(line) - len(line.lstrip()) + 2)
+                clean = line.rstrip()
+                out.append(clean if clean.endswith(",") else clean + ",")
+                indent = " " * (len(line) - len(line.lstrip()))
                 out.append(indent + "interpreter: '" + ts_bin + "',")
                 modified = True
+            else:
+                out.append(line)
         if modified:
             open(path, "w").write("\\n".join(out))
             print("[INFO] Injected interpreter: " + ts_bin + " into ecosystem.config.js")
