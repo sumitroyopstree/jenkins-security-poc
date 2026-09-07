@@ -127,11 +127,11 @@ echo "=========================================================="
 export NVM_DIR="\$HOME/.nvm"
 if [ -s "\$NVM_DIR/nvm.sh" ]; then
     . "\$NVM_DIR/nvm.sh"
-    nvm use ${node_version} 2>/dev/null || nvm use default 2>/dev/null || true
+    nvm use ${node_version} 2>/dev/null || nvm use 18 2>/dev/null || nvm use 20 2>/dev/null || nvm use default 2>/dev/null || true
 fi
 
-# Prepend active Node bin paths to PATH
-export PATH="/usr/local/bin:/usr/bin:\$HOME/.nvm/versions/node/\$(node -v 2>/dev/null)/bin:\$PATH"
+# Prepend active Node bin paths and local node_modules/.bin to PATH
+export PATH="${deploy_dir}/node_modules/.bin:\$PWD/node_modules/.bin:/usr/local/bin:/usr/bin:\$HOME/.nvm/versions/node/\$(node -v 2>/dev/null)/bin:\$PATH"
 
 # Locate PM2 Executable across all potential locations
 PM2_BIN=\$(which pm2 2>/dev/null || find \$HOME/.nvm/versions/node/ -name pm2 -type f 2>/dev/null | head -n 1 || echo "/usr/local/bin/pm2")
@@ -291,11 +291,23 @@ fi
 echo "[6/6] Launching PM2 process for ${app_name}..."
 
 if [[ "${start_command}" == *"start-crons"* ]]; then
-    echo "Executing cron master daemon launcher: ${start_command}..."
-    if [ ! -d "node_modules" ]; then
-        echo "Installing production dependencies for cron..."
-        npm install --omit=dev 2>/dev/null || npm install 2>/dev/null || true
+    echo "Preparing environment for cron execution..."
+
+    # Ensure local node_modules/.bin and local paths are in PATH
+    export PATH="${deploy_dir}/node_modules/.bin:\$PWD/node_modules/.bin:\$PATH"
+
+    # Always ensure npm install completes to generate/link .bin symlinks
+    echo "Ensuring node_modules dependencies are properly linked..."
+    npm install --prefer-offline 2>/dev/null || npm install 2>/dev/null || true
+
+    # Ensure ts-node is available in PATH for PM2 TypeScript execution
+    if ! command -v ts-node >/dev/null 2>&1 && [ ! -x "./node_modules/.bin/ts-node" ]; then
+        echo "[INFO] Installing ts-node globally for PM2 TypeScript daemon support..."
+        npm install -g ts-node typescript 2>/dev/null || true
+        export PATH="\$(npm bin -g 2>/dev/null || echo ''):\$HOME/.nvm/versions/node/\$(node -v 2>/dev/null)/bin:\$PATH"
     fi
+
+    echo "Executing cron master daemon launcher: ${start_command}..."
     ${start_command}
 elif [ -n "${start_command}" ]; then
     echo "Starting via configured start_command: ${start_command}"
@@ -345,8 +357,8 @@ EOF
                             ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes ubuntu@${server_ip} 'bash -s' << 'EOF'
 export NVM_DIR="\$HOME/.nvm"
 [ -s "\$NVM_DIR/nvm.sh" ] && . "\$NVM_DIR/nvm.sh"
-nvm use ${node_version} 2>/dev/null || true
-export PATH="/usr/local/bin:/usr/bin:\$HOME/.nvm/versions/node/\$(node -v 2>/dev/null)/bin:\$PATH"
+nvm use ${node_version} 2>/dev/null || nvm use 18 2>/dev/null || nvm use 20 2>/dev/null || true
+export PATH="${deploy_dir}/node_modules/.bin:\$PWD/node_modules/.bin:/usr/local/bin:/usr/bin:\$HOME/.nvm/versions/node/\$(node -v 2>/dev/null)/bin:\$PATH"
 PM2_BIN=\$(which pm2 2>/dev/null || echo "/usr/local/bin/pm2")
 
 HEALTHY=false
