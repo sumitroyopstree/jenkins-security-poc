@@ -164,7 +164,7 @@ fi
 TARGET_ARTIFACT="${artifact_name}"
 if [ "\$TARGET_ARTIFACT" = "latest" ] || [ -z "\$TARGET_ARTIFACT" ]; then
     echo "Resolving latest release artifact from s3://${s3_bucket}/${s3_keypath}/..."
-    LATEST_FILE=\$(aws s3 ls "s3://${s3_bucket}/${s3_keypath}/" --region "${secret_region}" | grep -E '\.tar\.gz$' | sort -k1,2 | tail -n 1 | awk '{print \$4}')
+    LATEST_FILE=\$(aws s3 ls "s3://${s3_bucket}/${s3_keypath}/" --region "${secret_region}" | grep 'tar.gz' | sort -k1,2 | tail -n 1 | awk '{print \$4}')
     if [ -n "\$LATEST_FILE" ]; then
         echo "[SUCCESS] Auto-resolved latest artifact: \$LATEST_FILE"
         TARGET_ARTIFACT="\$LATEST_FILE"
@@ -172,9 +172,9 @@ if [ "\$TARGET_ARTIFACT" = "latest" ] || [ -z "\$TARGET_ARTIFACT" ]; then
         echo "[ERROR] No .tar.gz artifacts found in s3://${s3_bucket}/${s3_keypath}/"
         exit 1
     fi
-elif [[ "\$TARGET_ARTIFACT" != *.tar.gz ]]; then
+elif ! echo "\$TARGET_ARTIFACT" | grep -q 'tar.gz'; then
     echo "Searching for artifact matching tag '\$TARGET_ARTIFACT' in s3://${s3_bucket}/${s3_keypath}/..."
-    MATCHED_FILE=\$(aws s3 ls "s3://${s3_bucket}/${s3_keypath}/" --region "${secret_region}" | grep -E "\$TARGET_ARTIFACT" | grep -E '\.tar\.gz$' | tail -n 1 | awk '{print \$4}')
+    MATCHED_FILE=\$(aws s3 ls "s3://${s3_bucket}/${s3_keypath}/" --region "${secret_region}" | grep "\$TARGET_ARTIFACT" | grep 'tar.gz' | tail -n 1 | awk '{print \$4}')
     if [ -n "\$MATCHED_FILE" ]; then
         echo "[SUCCESS] Resolved tag '\$TARGET_ARTIFACT' to file: \$MATCHED_FILE"
         TARGET_ARTIFACT="\$MATCHED_FILE"
