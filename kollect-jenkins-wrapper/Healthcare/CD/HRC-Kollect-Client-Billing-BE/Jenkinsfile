@@ -25,12 +25,12 @@ node('HRC-Kollect-Jenkins-Agent') {
         server_ip                               : currentEnv.server_ip,
         deploy_dir                              : currentEnv.deploy_dir,
         app_name                                : currentEnv.app_name,
-        node_version                            : 'v20.18.0',
+        node_version                            : 'v24.6.0',
         ssh_credentials_id                      : currentEnv.ssh_creds,
         secret_arn                              : currentEnv.secret_arn,
         secret_region                           : 'us-east-1',
         package_manager                         : 'npm',
-        start_command                           : 'dist/main.js',
+        start_command                           : 'npm run start',
         health_check_endpoint                   : 'http://127.0.0.1:3200/api-v2',
 
         // NOTIFICATION
