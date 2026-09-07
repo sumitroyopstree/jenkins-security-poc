@@ -63,7 +63,7 @@ def call(String type, String appName, String envName = 'TEST') {
             'STG' : [s3_bucket: 'hrc-kollect-client-billing-stg-fe', cloudfront_id: 'E1RYWTTS4NPREW'],
             'PROD': [s3_bucket: 'hrc-kollect-client-billing-prod-fe', cloudfront_id: 'E1RYWTTS4NPREW']
         ],
-        'HRC-Kollect-Frontdesk-BE': [
+        'HRC-Kollect-frontdesk-backend-BE': [
             'TEST': [ip: '10.2.30.254', path: '/opt/hrc-kollect-test/frontdesk-backend', app: 'hrc-kollect-frontdesk-backend-test', ssh: 'HRC-Kollect-Test-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.hrckollect.com-tDjPIP'],
             'DEV' : [ip: '10.2.40.133', path: '/opt/hrc-kollect-dev/frontdesk-backend', app: 'hrc-kollect-frontdesk-backend-dev', ssh: 'HRC-Kollect-Dev-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.hrckollect.com-tDjPIP'],
             'QA'  : [ip: '10.2.10.111', path: '/opt/hrc-kollect-qa/frontdesk-backend', app: 'hrc-kollect-frontdesk-backend-qa', ssh: 'HRC-Kollect-QA-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:qa-hrckollect-com-0mHt87'],
@@ -71,7 +71,7 @@ def call(String type, String appName, String envName = 'TEST') {
             'STG' : [ip: '10.2.40.170', path: '/opt/hrc-kollect-stg/frontdesk-backend', app: 'hrc-kollect-frontdesk-backend-stg', ssh: 'HRC-Kollect-Stg-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:stg-hrckollect-com-oLPno0'],
             'PROD': [ip: '10.2.10.118', path: '/opt/hrc-kollect-prod/frontdesk-backend', app: 'hrc-kollect-frontdesk-backend-prod', ssh: 'HRC-Kollect-PROD-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:portal.hrckollect.com-xvlUjU']
         ],
-        'HRC-Kollect-Pay-Portal-BE': [
+        'HRC-Kollect-Pay-Portal-Backend': [
             'TEST': [ip: '10.2.30.254', path: '/opt/hrc-kollect-test/pay-portal-backend', app: 'hrc-kollect-pay-portal-backend-test', ssh: 'HRC-Kollect-Test-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.hrckollect.com-tDjPIP'],
             'DEV' : [ip: '10.2.40.133', path: '/opt/hrc-kollect-dev/pay-portal-backend', app: 'hrc-kollect-pay-portal-backend-dev', ssh: 'HRC-Kollect-Dev-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.hrckollect.com-tDjPIP'],
             'QA'  : [ip: '10.2.10.111', path: '/opt/hrc-kollect-qa/pay-portal-backend', app: 'hrc-kollect-pay-portal-backend-qa', ssh: 'HRC-Kollect-QA-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:qa-hrckollect-com-0mHt87'],

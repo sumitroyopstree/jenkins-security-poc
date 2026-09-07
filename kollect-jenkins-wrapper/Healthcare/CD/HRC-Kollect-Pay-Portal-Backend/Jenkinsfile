@@ -3,7 +3,7 @@ def cdpipeline = new opstree.cd.templates.ssh_pm2.ssh_pm2_deployment()
 
 def artifactName = (env.artifact_name ?: params.artifact_name ?: env.image_tag ?: params.image_tag ?: '').trim()
 def targetEnv    = (env.ENVIRONMENT ?: params.ENVIRONMENT ?: 'TEST').trim().toUpperCase()
-def currentEnv   = inventory.cd('HRC-Kollect-Pay-Portal-BE', targetEnv)
+def currentEnv   = inventory.cd('HRC-Kollect-Pay-Portal-Backend', targetEnv)
 
 node('HRC-Kollect-Jenkins-Agent') {
     cdpipeline.call([
@@ -19,7 +19,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         // ARTIFACT CONFIGURATION (S3)
         artifact_s3_bucket_name         : 'hrc-cicd-test-bucket',
         artifact_s3_bucket_aws_region   : 'us-east-1',
-        artifact_s3_keypath_destination : 'HRC-Kollect-Pay-Portal-BE',
+        artifact_s3_keypath_destination : 'HRC-Kollect-Pay-Portal-Backend',
         artifact_name                   : artifactName,
 
         // TARGET VM

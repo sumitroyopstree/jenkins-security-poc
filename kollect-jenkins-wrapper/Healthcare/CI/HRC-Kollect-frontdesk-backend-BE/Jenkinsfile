@@ -2,7 +2,7 @@
 def cipipeline = new opstree.ci.templates.nodejs_ci.nodejs_ci()
 
 def targetEnv  = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
-def currentEnv = inventory.ci('HRC-Kollect-Pay-Portal-BE', targetEnv)
+def currentEnv = inventory.ci('HRC-Kollect-frontdesk-backend-BE', targetEnv)
 
 node('HRC-Kollect-Jenkins-Agent') {
     cipipeline.call([
@@ -12,8 +12,8 @@ node('HRC-Kollect-Jenkins-Agent') {
         clean_workspace                  : true,
 
         // VCS MANAGEMENT
-        repo_https_url                   : 'https://gitlab.healthreconconnect.com/hrc/kollect-payportal-be.git',
-        repo_ssh_url                     : 'git@gitlab.healthreconconnect.com:hrc/kollect-payportal-be.git',
+        repo_https_url                   : 'https://gitlab.healthreconconnect.com/hrc/kollect-frontdesk-service.git',
+        repo_ssh_url                     : 'git@gitlab.healthreconconnect.com:hrc/kollect-frontdesk-service.git',
         repo_branch                      : params.BRANCH ?: 'main',
         repo_url_type                    : 'http',
         jenkins_git_creds_id             : 'piyushu-gitlab-token',
@@ -23,13 +23,13 @@ node('HRC-Kollect-Jenkins-Agent') {
         // CREDS SCANNING (GITLEAKS)
         gitleaks_check                   : true,
         fail_job_if_leak_detected        : false,
-        gitleaks_scan_mode               : 'latest',
+        gitleaks_scan_mode               : 'full',
         gitleaks_report_jenkins_publish  : true,
 
         // DEPENDENCY SCANNING (OWASP)
         dependency_check                          : 'true',
         dependency_scan_tool                      : 'owasp',
-        owasp_project_name                        : 'hrc-kollect-pay-portal-backend',
+        owasp_project_name                        : 'hrc-kollect-frontdesk-be',
         owasp_report_publish                      : 'true',
         owasp_report_format                       : 'html',
         fail_job_if_dependency_returned_exception : 'false',
@@ -39,11 +39,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         perform_code_build               : true,
         node_version                     : '20',
         package_manager                  : 'yarn',
-        app_name                         : 'hrc-kollect-pay-portal-be',
-        build_command                    : 'yarn build',
-        build_output_path                : 'dist',
-        include_node_modules             : true,
-        prune_dev_dependencies           : false,
+        app_name                         : 'hrc-kollect-frontdesk-be',
 
         // UNIT TEST & CODE COVERAGE
         unit_testing_check               : 'true',
@@ -53,8 +49,8 @@ node('HRC-Kollect-Jenkins-Agent') {
         // STATIC CODE ANALYSIS (SONARQUBE)
         static_code_analysis_check              : true,
         codebase_to_scan_directory              : '.',
-        sonar_project_key                       : 'hrc-kollect-pay-portal-backend',
-        sonar_project_name                      : 'hrc-kollect-pay-portal-backend',
+        sonar_project_key                       : 'hrc-kollect-frontdesk-be',
+        sonar_project_name                      : 'hrc-kollect-frontdesk-be',
         sonar_sources                           : '.',
         sonar_extra_args                        : '',
         fail_job_if_analysis_returned_exception : 'false',
@@ -70,7 +66,7 @@ node('HRC-Kollect-Jenkins-Agent') {
 
         // TRIGGER CD PIPELINE (Recreate Mode)
         enable_trigger_cd_pipeline       : params.TRIGGER_CD != null ? params.TRIGGER_CD : true,
-        trigger_cd_pipeline_path         : 'Healthcare/CD/HRC-Kollect-Pay-Portal-BE',
+        trigger_cd_pipeline_path         : 'Healthcare/CD/HRC-Kollect-frontdesk-backend-BE',
         image_tag_build_param            : 'artifact_name',
         environment                      : targetEnv,
 

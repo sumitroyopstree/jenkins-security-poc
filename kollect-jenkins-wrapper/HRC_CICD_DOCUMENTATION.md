@@ -63,8 +63,8 @@ hrc/
 | **HRC** | `HRC-Kollect-Cron` | Node.js Scheduler | SSH + PM2 | `10.2.40.133` | DEV, DEMO, QA, STG, PROD |
 | **HRC** | `HRC-Kollect-Client-Billing-BE` | Node.js Backend | SSH + PM2 | `10.2.40.133` | DEV, DEMO, QA, STG, PROD |
 | **HRC** | `HRC-Kollect-Client-Billing-FE` | Next.js SSR | SSH + PM2 | `10.2.40.133` | DEV, DEMO, QA, STG, PROD |
-| **HRC** | `HRC-Kollect-Frontdesk-BE` | Node.js Backend | SSH + PM2 | `10.2.40.133` | DEV, QA |
-| **HRC** | `HRC-Kollect-Pay-Portal-BE` | Node.js Backend | SSH + PM2 | `10.2.40.133` | DEV, DEMO, QA, STG, PROD |
+| **HRC** | `HRC-Kollect-frontdesk-backend-BE` | Node.js Backend | SSH + PM2 | `10.2.40.133` | DEV, QA |
+| **HRC** | `HRC-Kollect-Pay-Portal-Backend` | Node.js Backend | SSH + PM2 | `10.2.40.133` | DEV, DEMO, QA, STG, PROD |
 | **HRC** | `HRC-Kollect-Reporting-Module` | Java 17 Maven | Docker + ECR | `167121004129.dkr.ecr...` | DEV, DEMO, QA, STG, PROD |
 | **HRC** | `HRC-AMD-Sync-Service` | Java 17 Maven | Docker + ECR | `167121004129.dkr.ecr...` | STG, QA, DEMO, PROD |
 | **Non-Healthcare** | `Non-Healthcare-BE` | Node.js Backend | SSH + PM2 | `10.2.40.183` | DEV, QA, DEMO |

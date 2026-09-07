@@ -69,12 +69,12 @@ def hrcCiJobs = [
         scriptPath   : 'kollect-jenkins-wrapper/Healthcare/CI/HRC-Kollect-Client-Billing-BE/Jenkinsfile',
         parameters   : hrcCommonParameters
     ],
-    'HRC-Kollect-Frontdesk-BE': [
-        scriptPath   : 'kollect-jenkins-wrapper/Healthcare/CI/HRC-Kollect-Frontdesk-BE/Jenkinsfile',
+    'HRC-Kollect-frontdesk-backend-BE': [
+        scriptPath   : 'kollect-jenkins-wrapper/Healthcare/CI/HRC-Kollect-frontdesk-backend-BE/Jenkinsfile',
         parameters   : hrcCommonParameters
     ],
-    'HRC-Kollect-Pay-Portal-BE': [
-        scriptPath   : 'kollect-jenkins-wrapper/Healthcare/CI/HRC-Kollect-Pay-Portal-BE/Jenkinsfile',
+    'HRC-Kollect-Pay-Portal-Backend': [
+        scriptPath   : 'kollect-jenkins-wrapper/Healthcare/CI/HRC-Kollect-Pay-Portal-Backend/Jenkinsfile',
         parameters   : hrcCommonParameters
     ],
     'HRC-Kollect-Reporting-Module': [
