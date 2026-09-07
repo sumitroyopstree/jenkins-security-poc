@@ -27,8 +27,8 @@ node('HRC-Kollect-Jenkins-Agent') {
         ecr_repo                            : currentEnv.ecr_repo ?: 'hrc-kollect-cicd/apps',
 
         // PORTS
-        container_port                      : 8180,
-        host_port                           : 8080,
+        container_port                      : 8082,
+        host_port                           : 8182,
 
         // NOTIFICATIONS
         notification_enabled                    : true,

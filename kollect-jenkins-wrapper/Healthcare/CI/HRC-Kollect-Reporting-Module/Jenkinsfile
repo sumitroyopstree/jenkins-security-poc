@@ -1,8 +1,9 @@
 @Library('jenkins-shared-libraries@feature-cicd') _
-def cipipeline = new opstree.ci.templates.nodejs_ci.nodejs_ci()
+def cipipeline = new opstree.ci.templates.java_ci.java_ci()
 
 def targetEnv  = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
 def currentEnv = inventory.ci('HRC-Kollect-Reporting-Module', targetEnv)
+def cdEnv      = inventory.cd('HRC-Kollect-Reporting-Module', targetEnv)
 
 node('HRC-Kollect-Jenkins-Agent') {
     cipipeline.call([
@@ -29,46 +30,66 @@ node('HRC-Kollect-Jenkins-Agent') {
         // DEPENDENCY SCANNING (OWASP)
         dependency_check                          : 'true',
         dependency_scan_tool                      : 'owasp',
-        owasp_project_name                        : 'hrc-kollect-reporting-module',
+        owasp_project_name                        : 'kollect-reporting-module',
         owasp_report_publish                      : 'true',
         owasp_report_format                       : 'html',
         fail_job_if_dependency_returned_exception : 'false',
         nvd_api_key_creds_id                      : 'NVD_API_KEY',
         disable_yarn_audit                        : 'true',
 
-        // BUILD & PACKAGE ARTIFACT (NODE.JS)
-        perform_code_build               : true,
-        node_version                     : '20',
-        package_manager                  : 'yarn',
-        app_name                         : 'hrc-kollect-reporting-module',
-
-        // UNIT TEST & CODE COVERAGE
+        // UNIT TESTING
         unit_testing_check               : 'true',
         fail_job_if_unit_issue_detected  : 'false',
-        unit_test_reports_path           : '**/junit*.xml',
+        unit_test_reports_path           : '**/target/surefire-reports/*.xml',
+
+        // CODE BUILD CONFIGURATION
+        perform_code_build               : true,
+        build_tool                       : 'maven',
+        withmaven_globaltool_jdk         : 'Java 17',
+        withmaven_globaltool_maven       : 'Maven 3.9',
+        java_version                     : '17',
+        codeartifact_dependency          : 'false',
+        app_stack                        : 'java',
+        environment                      : targetEnv,
 
         // STATIC CODE ANALYSIS (SONARQUBE)
         static_code_analysis_check              : true,
-        codebase_to_scan_directory              : '.',
-        sonar_project_key                       : 'hrc-kollect-reporting-module',
-        sonar_project_name                      : 'hrc-kollect-reporting-module',
-        sonar_sources                           : '.',
-        sonar_extra_args                        : '',
+        sonar_project_key                       : 'kollect-reporting-module',
+        sonar_project_name                      : 'kollect-reporting-module',
+        sonar_sources                           : 'src/main/java',
+        sonar_extra_args                        : '-Dsonar.java.binaries=target/classes',
         fail_job_if_analysis_returned_exception : 'false',
         jenkins_sonarqube_token_creds_id        : 'HRC_SONARQUBE_TOKEN',
 
-        // PUBLISH TO S3
-        artifact_publish_check           : true,
-        artifact_destination_type        : 'S3',
-        jenkins_aws_credentials_id       : currentEnv.credentials_id,
-        artifact_s3_bucket_aws_region    : currentEnv.aws_region,
-        artifact_s3_bucket_name          : currentEnv.artifact_s3_bucket_name,
-        artifact_s3_keypath_destination  : currentEnv.artifact_s3_keypath,
+        // DOCKER BUILD
+        perform_build_dockerfile         : true,
+        image_name                       : 'kollect-reporting-module',
+        docker_image_name                : 'kollect-reporting-module',
+        dockerfile_location              : 'Dockerfile',
 
-        // TRIGGER CD PIPELINE (Recreate Mode)
+        // POST-BUILD CHECKS
+        // IMAGE SCANNING (TRIVY)
+        image_scanning_check             : true,
+        scan_severity                    : 'HIGH,CRITICAL',
+        image_scanning_report_publish    : 'true',
+
+        // IMAGE SIZE VALIDATOR
+        image_size_validator_check       : true,
+        max_allowed_image_size           : '1000',
+        fail_job_if_validation_fail      : 'false',
+
+        // PUBLISH ARTIFACT (ECR)
+        artifact_publish_check           : true,
+        artifact_destination_type        : 'ecr',
+        jenkins_aws_credentials_id       : currentEnv.credentials_id,
+        ecr_repo_name                    : cdEnv.ecr,
+        ecr_region                       : 'us-east-1',
+        account_id                       : '167121004129',
+
+        // TRIGGER CD PIPELINE
         enable_trigger_cd_pipeline       : params.TRIGGER_CD != null ? params.TRIGGER_CD : true,
         trigger_cd_pipeline_path         : 'Healthcare/CD/HRC-Kollect-Reporting-Module',
-        image_tag_build_param            : 'artifact_name',
+        image_tag_build_param            : 'image_tag',
         environment                      : targetEnv,
 
         // NOTIFICATION

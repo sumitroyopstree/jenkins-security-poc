@@ -91,7 +91,7 @@ def call(String type, String appName, String envName = 'TEST') {
             'TEST': [ip: '10.2.30.254', ssh: 'HRC-Kollect-Test-Server', app: 'hrc-amd-sync-service-test', ecr: 'hrc-kollect-cicd/apps'],
             'DEV' : [ip: '10.2.40.133', ssh: 'HRC-Kollect-Dev-Server',  app: 'hrc-amd-sync-service-dev',  ecr: 'hrc-amd-sync-service-dev'],
             'QA'  : [ip: '10.2.10.111', ssh: 'HRC-Kollect-QA-Server',   app: 'hrc-amd-sync-service-qa',   ecr: 'hrc-amd-sync-service-qa'],
-            'DEMO': [ip: '10.2.40.238', ssh: 'HRC-Kollect-Demo-Server', app: 'hrc-amd-sync-service-demo', ecr: 'hrc-amd-sync-service-demo'],
+            'DEMO': [ip: '10.2.1.23',   ssh: 'HRC-AMD-Kollect-Mediator-DEV', app: 'hrc-amd-sync-service-demo', ecr: 'hrc-amd-sync-service-qa'],
             'STG' : [ip: '10.2.40.170', ssh: 'HRC-Kollect-Stg-Server',  app: 'hrc-amd-sync-service-stg',  ecr: 'hrc-amd-sync-service-stg'],
             'PROD': [ip: '10.2.10.118', ssh: 'HRC-Kollect-PROD-Server', app: 'hrc-amd-sync-service-prod', ecr: 'hrc-amd-sync-service-prod']
         ],

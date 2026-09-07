@@ -9,7 +9,7 @@ node('HRC-Kollect-Jenkins-Agent') {
     cipipeline.call([
         enable_jenkins_build_param_override: true,
 
-        // WORKSPACE MANAGEMENT1
+        // WORKSPACE MANAGEMENT
         clean_workspace                  : true,
 
         // VCS MANAGEMENT
