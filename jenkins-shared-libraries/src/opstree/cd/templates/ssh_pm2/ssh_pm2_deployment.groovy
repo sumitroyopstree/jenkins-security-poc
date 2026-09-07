@@ -241,6 +241,14 @@ else
     echo "console.log('fetchSecrets: secrets configured via CI/CD environment');" > fetchSecrets.js
 fi
 
+# Ensure tsconfig.json and nest-cli.json exist if nest CLI is invoked via npm start
+if [ ! -f "tsconfig.json" ]; then
+    echo '{"compilerOptions":{"target":"es2021","module":"commonjs","skipLibCheck":true}}' > tsconfig.json
+fi
+if [ ! -f "nest-cli.json" ]; then
+    echo '{"collection":"@nestjs/schematics","sourceRoot":"src"}' > nest-cli.json
+fi
+
 # Run DB migrations if enabled
 if [ "${run_db_migration}" = "true" ]; then
     echo "Executing DB migrations..."
