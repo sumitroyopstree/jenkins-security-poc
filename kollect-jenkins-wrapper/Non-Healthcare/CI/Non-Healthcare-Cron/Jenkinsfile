@@ -47,7 +47,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         prune_dev_dependencies           : false,
 
         // UNIT TEST & CODE COVERAGE
-        unit_testing_check               : 'false',
+        unit_testing_check               : 'true',
         fail_job_if_unit_issue_detected  : 'false',
         unit_test_reports_path           : '**/junit*.xml',
 
