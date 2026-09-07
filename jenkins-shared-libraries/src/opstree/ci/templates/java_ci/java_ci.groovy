@@ -370,7 +370,7 @@ def call(Map step_params) {
             }
             throw e
         } finally {
-                if (currentBuild.currentResult == 'SUCCESS') {
+                if (currentBuild.currentResult == 'SUCCESS' || currentBuild.currentResult == 'UNSTABLE') {
                         try {
                             def parser  = new parser()
                             def repo_dir = parser.fetch_git_repo_name('repo_url':"${repo_url}")
