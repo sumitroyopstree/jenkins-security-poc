@@ -20,7 +20,7 @@ def hrcCommonParameters = [
     [
         type: 'choice',
         name: 'ENVIRONMENT',
-        choices: ['DEV', 'DEMO', 'QA', 'STG', 'PROD'],
+        choices: ['TEST', 'DEV', 'DEMO', 'QA', 'STG', 'PROD'],
         description: 'Select target deployment environment'
     ]
 ]
