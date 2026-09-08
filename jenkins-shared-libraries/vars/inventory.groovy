@@ -142,7 +142,9 @@ def call(String type, String appName, String envName = 'TEST') {
         def s3Item    = s3Data[env] ?: s3Data['TEST']
         def ecrItem   = ecrData[env] ?: ecrData['TEST']
         def repo      = ecrRepos[appName] ?: ''
-        def appSecret = cdData[appName]?[env]?.secret ?: cdData[appName]?['DEV']?.secret ?: ''
+        def appMap    = cdData[appName] ?: [:]
+        def envItem   = appMap[env] ?: appMap['TEST'] ?: appMap['DEV'] ?: [:]
+        def appSecret = envItem.secret ?: ''
         return [
             // S3 Artifact Config
             artifact_s3_bucket_name: s3Item.bucket,
