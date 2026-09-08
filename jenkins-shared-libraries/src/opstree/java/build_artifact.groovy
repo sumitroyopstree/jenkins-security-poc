@@ -285,16 +285,14 @@ def build_artifact(Map step_params) {
     dir("${WORKSPACE}/${repo_dir}") {
         if (build_tool == 'maven') {
             if (codeartifact_dependency == 'true') {
-                withAWS() {
-                    def codeArtifactToken = sh(
-                        script: """
-                        aws codeartifact get-authorization-token --domain ${codeartifact_domain} --domain-owner ${codeartifact_owner} --query authorizationToken --output text
-                        """,
-                        returnStdout: true
-                    ).trim()
+                def codeArtifactToken = sh(
+                    script: """
+                    aws codeartifact get-authorization-token --domain ${codeartifact_domain} --domain-owner ${codeartifact_owner} --query authorizationToken --output text
+                    """,
+                    returnStdout: true
+                ).trim()
 
-                    sh """ docker run --rm -e CODEARTIFACT_AUTH_TOKEN=${codeArtifactToken} -v ~/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app ${maven_image} sh -c "cd /app/${pom_location} && mvn clean package -s /app/${mvn_settings_path} -DskipTests" """
-                }
+                sh """ docker run --rm -e CODEARTIFACT_AUTH_TOKEN=${codeArtifactToken} -v ~/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app ${maven_image} sh -c "cd /app/${pom_location} && mvn clean package -s /app/${mvn_settings_path} -DskipTests" """
             } else {
                 sh """ docker run --rm -v ~/.m2:/root/.m2 -v ${WORKSPACE}/${repo_dir}:/app -w /app ${maven_image} sh -c "cd /app/${pom_location} && mvn clean package -DskipTests" """
             }

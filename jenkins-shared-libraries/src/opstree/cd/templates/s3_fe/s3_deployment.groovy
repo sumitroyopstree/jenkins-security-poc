@@ -11,6 +11,31 @@ def get_params_value(Boolean enableOverride, Map step_params, String paramName) 
     return value
 }
 
+def withAwsCredentials(String aws_creds_id, String aws_region, Closure block) {
+    if (aws_creds_id && aws_creds_id != 'null' && aws_creds_id != '') {
+        try {
+            withCredentials([usernamePassword(
+                credentialsId: aws_creds_id,
+                usernameVariable: 'AWS_ACCESS_KEY_ID',
+                passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+            )]) {
+                withEnv(["AWS_REGION=${aws_region}", "AWS_DEFAULT_REGION=${aws_region}"]) {
+                    block()
+                }
+            }
+        } catch (Exception credErr) {
+            echo "[WARN] AWS Credentials binding skipped (${credErr.message}), using EC2 IAM Role / AWS CLI default..."
+            withEnv(["AWS_REGION=${aws_region}", "AWS_DEFAULT_REGION=${aws_region}"]) {
+                block()
+            }
+        }
+    } else {
+        withEnv(["AWS_REGION=${aws_region}", "AWS_DEFAULT_REGION=${aws_region}"]) {
+            block()
+        }
+    }
+}
+
 def call(Map step_params) {
     ansiColor('xterm') {
         def enableOverride = step_params.enable_jenkins_build_param_override?.toBoolean() ?: false
@@ -62,7 +87,7 @@ ${detailLines}
             }
 
             stage('Deploy to S3') {
-                withAWS(credentials: aws_creds_id, region: aws_region) {
+                withAwsCredentials(aws_creds_id, aws_region) {
                     sh """#!/bin/bash
                         set -e
 
@@ -111,15 +136,21 @@ ${detailLines}
                 }
             }
 
-            stage('CloudFront Cache Invalidation') {
-                sh """#!/bin/bash
-                    set -e
-                    aws cloudfront create-invalidation \\
-                        --distribution-id ${cloudfront_dist_id} \\
-                        --paths "/*" \\
-                        --region ${aws_region}
-                    echo "CloudFront invalidation submitted for distribution: ${cloudfront_dist_id}"
-                """
+            if (cloudfront_dist_id && cloudfront_dist_id != 'null' && cloudfront_dist_id != '') {
+                stage('CloudFront Cache Invalidation') {
+                    withAwsCredentials(aws_creds_id, aws_region) {
+                        sh """#!/bin/bash
+                            set -e
+                            aws cloudfront create-invalidation \\
+                                --distribution-id ${cloudfront_dist_id} \\
+                                --paths "/*" \\
+                                --region ${aws_region}
+                            echo "CloudFront invalidation submitted for distribution: ${cloudfront_dist_id}"
+                        """
+                    }
+                }
+            } else {
+                echo "[INFO] CloudFront Distribution ID not configured — skipping invalidation stage."
             }
 
         } catch (Exception e) {

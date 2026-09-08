@@ -102,22 +102,20 @@ def build_dockerfile(Map step_params) {
                 """
             }
         } else if (codeartifact_dependency == 'true') {
-            withAWS() {
-                def codeArtifactToken = sh(
-                    script: """
-                        aws codeartifact get-authorization-token --domain ${codeartifact_domain} --domain-owner ${codeartifact_owner} --query authorizationToken --output text
-                    """,
-                    returnStdout: true
-                ).trim()
+            def codeArtifactToken = sh(
+                script: """
+                    aws codeartifact get-authorization-token --domain ${codeartifact_domain} --domain-owner ${codeartifact_owner} --query authorizationToken --output text
+                """,
+                returnStdout: true
+            ).trim()
 
-                def CODEARTIFACT_AUTH_TOKEN = codeArtifactToken
-                sh """
-                    git config --global --add safe.directory ${buildDir} && \\
-                    COMMIT_HASH=\$(git rev-parse --short HEAD) && \\
-                    docker build --build-arg CODEARTIFACT_AUTH_TOKEN=${CODEARTIFACT_AUTH_TOKEN} ${build_args} -f ${dockerfile_location} -t ${image_name}:\${COMMIT_HASH} ${dockerfile_context} && \\
-                    docker tag ${image_name}:\${COMMIT_HASH} ${image_name}:latest
-                """
-            }
+            def CODEARTIFACT_AUTH_TOKEN = codeArtifactToken
+            sh """
+                git config --global --add safe.directory ${buildDir} && \\
+                COMMIT_HASH=\$(git rev-parse --short HEAD) && \\
+                docker build --build-arg CODEARTIFACT_AUTH_TOKEN=${CODEARTIFACT_AUTH_TOKEN} ${build_args} -f ${dockerfile_location} -t ${image_name}:\${COMMIT_HASH} ${dockerfile_context} && \\
+                docker tag ${image_name}:\${COMMIT_HASH} ${image_name}:latest
+            """
         } else {
             sh """
                 git config --global --add safe.directory ${buildDir} && \\
