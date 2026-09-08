@@ -122,7 +122,7 @@ ${detailLines}
                         # -------------------------------------------------------
                         echo "Backing up current S3 content to build #${currentBuild.number}..."
                         aws s3 mv s3://${s3_bucket}/ s3://${s3_bucket}/${currentBuild.number}/ \\
-                            --recursive --region ${aws_region} 2>/dev/null || true
+                            --recursive --exclude "[0-9]*/*" --region ${aws_region} 2>/dev/null || true
 
                         # -------------------------------------------------------
                         # Step 3: Deploy new build to target S3 bucket

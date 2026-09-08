@@ -50,12 +50,12 @@ def call(String type, String appName, String envName = 'TEST') {
           //  'PROD': [ip: '10.2.10.118', path: '/opt/hrc-kollect-prod', app: 'hrc-kollect-prod-backend', ssh: 'HRC-Kollect-PROD-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:portal.hrckollect.com-xvlUjU']
         ],
         'HRC-Kollect-FE': [
-            'TEST': [s3_bucket: 'hrc-cicd-test-bucket', cloudfront_id: 'E1RYWTTS4NPREW'],
-           // 'DEV' : [s3_bucket: 'hrc-cicd-test-bucket', cloudfront_id: 'E1RYWTTS4NPREW'],
-           // 'QA'  : [s3_bucket: 'hrc-cicd-test-bucket', cloudfront_id: 'E1RYWTTS4NPREW'],
-           // 'DEMO': [s3_bucket: 'hrc-cicd-test-bucket', cloudfront_id: 'E1RYWTTS4NPREW'],
-           // 'STG' : [s3_bucket: 'hrc-cicd-test-bucket', cloudfront_id: 'E1RYWTTS4NPREW'],
-           // 'PROD': [s3_bucket: 'hrc-cicd-test-bucket', cloudfront_id: 'E1RYWTTS4NPREW']
+            'TEST': [s3_bucket: 'hrckollect-test-fe', cloudfront_id: 'E1RYWTTS4NPREW'],
+           // 'DEV' : [s3_bucket: 'hrckollect-dev-fe', cloudfront_id: 'E1RYWTTS4NPREW'],
+           // 'QA'  : [s3_bucket: 'hrckollect-qa-fe', cloudfront_id: 'E1RYWTTS4NPREW'],
+           // 'DEMO': [s3_bucket: 'hrckollect-demo-fe', cloudfront_id: 'E1RYWTTS4NPREW'],
+           // 'STG' : [s3_bucket: 'hrckollect-stg-fe', cloudfront_id: 'E1RYWTTS4NPREW'],
+           // 'PROD': [s3_bucket: 'hrckollect-prod-fe', cloudfront_id: 'E1RYWTTS4NPREW']
         ],
         'HRC-Kollect-Cron': [
             'TEST': [ip: '10.2.30.254', path: '/opt/hrc-kollect-test/cron', app: 'hrc-kollect-test-cron', ssh: 'HRC-Kollect-Test-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.hrckollect.com-tDjPIP'],
