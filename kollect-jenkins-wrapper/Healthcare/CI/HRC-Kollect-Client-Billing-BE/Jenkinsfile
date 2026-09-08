@@ -76,7 +76,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         // NOTIFICATION
         notification_enabled                    : true,
         notification_channel                    : 'gmail',
-        gmail_notification_from_email_id        : 'telukuntlaharinath8@gmail.com',
-        gmail_notification_recipients_email_ids : 'harinath.telukuntla@opstree.com'
+        gmail_notification_from_email_id        : 'smtp@kernernorland.com',
+        gmail_notification_recipients_email_ids : 'asangai@healthreconconnect.com'
     ])
 }
