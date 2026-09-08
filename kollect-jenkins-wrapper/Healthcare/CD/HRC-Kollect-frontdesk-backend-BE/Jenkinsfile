@@ -1,10 +1,14 @@
 @Library('jenkins-shared-libraries@feature-cicd') _
 def cdpipeline = new opstree.cd.templates.ssh_pm2.ssh_pm2_deployment()
 
-def targetEnv  = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
-def currentEnv = inventory.cd('HRC-Kollect-frontdesk-backend-BE', targetEnv)
+def targetEnv    = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
+def artifactName = (env.artifact_name ?: params.artifact_name ?: env.image_tag ?: params.image_tag ?: 'latest').trim()
+def currentEnv   = inventory.cd('HRC-Kollect-frontdesk-backend-BE', targetEnv)
+def ciEnv        = inventory.ci('HRC-Kollect-frontdesk-backend-BE', targetEnv)
 
 node('HRC-Kollect-Jenkins-Agent') {
+    currentBuild.description = "CD: HRC-Kollect-frontdesk-backend-BE | Env: ${targetEnv} | Artifact: ${artifactName}"
+
     cdpipeline.call([
         enable_jenkins_build_param_override: true,
 
@@ -12,18 +16,11 @@ node('HRC-Kollect-Jenkins-Agent') {
         clean_workspace      : true,
 
         // ARTIFACT CONFIGURATION (S3)
-        artifact_s3_bucket_name         : 'hrc-cicd-test-bucket',
-        artifact_s3_bucket_aws_region   : 'us-east-1',
-        artifact_s3_keypath_destination : 'HRC-Kollect-frontdesk-backend-BE',
-        artifact_name                   : params.artifact_name ?: '',
-        jenkins_aws_credentials_id      : 'hrc-aws-ecr-credentials',
-
-        // VCS MANAGEMENT
-        repo_https_url       : 'https://gitlab.healthreconconnect.com/hrc/kollect-frontdesk-service.git',
-        repo_branch          : params.BRANCH ?: 'main',
-        repo_url_type        : 'http',
-        jenkins_git_creds_id : 'piyushu-gitlab-token',
-        source_code_path     : '',
+        artifact_s3_bucket_name         : ciEnv.artifact_s3_bucket_name,
+        artifact_s3_bucket_aws_region   : ciEnv.aws_region,
+        artifact_s3_keypath_destination : ciEnv.artifact_s3_keypath,
+        artifact_name                   : artifactName,
+        jenkins_aws_credentials_id      : ciEnv.credentials_id,
 
         // DYNAMIC DEPLOYMENT CONFIG (BY ENVIRONMENT)
         server_ip            : currentEnv.server_ip,
