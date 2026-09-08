@@ -2112,6 +2112,26 @@ fi
             mkdir -p ${shellQuote(artifact_dir)}
         """.stripIndent()
 
+        def secret_arn = step_params.secret_arn ?: ''
+        def secret_region = step_params.secret_region ?: 'us-east-1'
+
+        if (secret_arn && "${secret_arn}".trim() != '') {
+            sh """
+                echo "[INFO] Resolving build-time .env from AWS Secrets Manager: ${secret_arn}..."
+                SECRET_PAYLOAD=\$(aws secretsmanager get-secret-value --secret-id "${secret_arn}" --region "${secret_region}" --query 'SecretString' --output text 2>/dev/null || true)
+                if [ -n "\$SECRET_PAYLOAD" ] && [ "\$SECRET_PAYLOAD" != "null" ]; then
+                    if echo "\$SECRET_PAYLOAD" | grep -q '^{' ; then
+                        echo "\$SECRET_PAYLOAD" | jq -r 'to_entries|map("\\(.key)=\\(.value|tostring)")|.[]' > .env 2>/dev/null || true
+                    else
+                        printf '%s\\n' "\$SECRET_PAYLOAD" > .env
+                    fi
+                    echo "[SUCCESS] Generated .env file from Secrets Manager before build."
+                else
+                    echo "[INFO] Secrets Manager returned empty payload, skipping .env injection."
+                fi
+            """.stripIndent()
+        }
+
         def build_script = """#!/bin/sh
 set -eu
 

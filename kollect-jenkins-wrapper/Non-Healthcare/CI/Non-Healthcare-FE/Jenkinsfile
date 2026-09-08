@@ -43,6 +43,7 @@ node('HRC-Kollect-Jenkins-Agent') {
         node_version                     : '14',
         package_manager                  : 'yarn',
         app_name                         : 'non-healthcare-fe',
+        secret_arn                       : currentEnv.secret_arn,
         build_command                    : 'yarn build',
         build_output_path                : 'dist',
         include_node_modules             : true,

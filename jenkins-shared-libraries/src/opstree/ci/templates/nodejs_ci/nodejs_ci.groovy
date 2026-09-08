@@ -432,7 +432,9 @@ def call(Map step_params) {
                           app_name: "${get_params_value(enableOverride, step_params, 'app_name') ?: 'hrc-kollect-be'}",
                           build_secret_creds_id: "${get_params_value(enableOverride, step_params, 'build_secret_creds_id')}",
                           build_secret_env_var: "${get_params_value(enableOverride, step_params, 'build_secret_env_var')}",
-                          build_command: "${get_params_value(enableOverride, step_params, 'build_command')}"
+                          build_command: "${get_params_value(enableOverride, step_params, 'build_command')}",
+                          secret_arn: "${get_params_value(enableOverride, step_params, 'secret_arn') ?: ''}",
+                          secret_region: "${get_params_value(enableOverride, step_params, 'secret_region') ?: 'us-east-1'}"
         ]
 
         /*

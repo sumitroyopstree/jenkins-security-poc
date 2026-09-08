@@ -128,10 +128,10 @@ def call(String type, String appName, String envName = 'TEST') {
             'DEMO': [ip: '10.2.40.110', path: '/opt/non-healthcare-demo/cron', app: 'non-healthcare-demo-cron', ssh: 'Non-Healthcare-demo-server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:demo.nonhealthcare.com-fpjxjz']
         ],
         'Non-Healthcare-FE': [
-            'TEST': [s3_bucket: 'hrc-cicd-test-bucket', cloudfront_id: 'EFTZC3GRKKII0'],
-            'DEV' : [s3_bucket: 'non-healthcare-kollect-dev-fe', cloudfront_id: 'EFTZC3GRKKII0'],
-            'QA'  : [s3_bucket: 'non-healthcare-kollect-qa-fe', cloudfront_id: 'E2H5KARQB4008Q'],
-            'DEMO': [s3_bucket: 'non-healthcare-kollect-demo-fe', cloudfront_id: 'E2H5KARQB4008Q']
+            'TEST': [s3_bucket: 'hrc-cicd-test-bucket', cloudfront_id: 'EFTZC3GRKKII0', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.nonhealthcare.com-kg1Ktx'],
+            'DEV' : [s3_bucket: 'non-healthcare-kollect-dev-fe', cloudfront_id: 'EFTZC3GRKKII0', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.nonhealthcare.com-kg1Ktx'],
+            'QA'  : [s3_bucket: 'non-healthcare-kollect-qa-fe', cloudfront_id: 'E2H5KARQB4008Q', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:qa.nonhealthcare.com-3xKQQa'],
+            'DEMO': [s3_bucket: 'non-healthcare-kollect-demo-fe', cloudfront_id: 'E2H5KARQB4008Q', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:demo.nonhealthcare.com-fpjxjz']
         ]
     ]
 
@@ -139,15 +139,17 @@ def call(String type, String appName, String envName = 'TEST') {
     // RETURN CONFIG MAP BASED ON TYPE (CI, CD, ECR)
     // --------------------------------------------------------------------------
     if (type.toUpperCase() == 'CI') {
-        def s3Item  = s3Data[env] ?: s3Data['TEST']
-        def ecrItem = ecrData[env] ?: ecrData['TEST']
-        def repo    = ecrRepos[appName] ?: ''
+        def s3Item    = s3Data[env] ?: s3Data['TEST']
+        def ecrItem   = ecrData[env] ?: ecrData['TEST']
+        def repo      = ecrRepos[appName] ?: ''
+        def appSecret = cdData[appName]?[env]?.secret ?: cdData[appName]?['DEV']?.secret ?: ''
         return [
             // S3 Artifact Config
             artifact_s3_bucket_name: s3Item.bucket,
             artifact_s3_keypath    : appName,
             aws_region             : s3Item.region,
             credentials_id         : s3Item.creds,
+            secret_arn             : appSecret,
 
             // ECR Docker Config
             ecr_repo_name          : repo,
