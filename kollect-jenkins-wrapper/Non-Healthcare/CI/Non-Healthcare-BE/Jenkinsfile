@@ -1,10 +1,12 @@
 @Library('jenkins-shared-libraries@feature-cicd') _
 def cipipeline = new opstree.ci.templates.nodejs_ci.nodejs_ci()
 
-def targetEnv  = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
+def targetEnv  = (params.ENVIRONMENT ?: 'DEV').toUpperCase()
 def currentEnv = inventory.ci('Non-Healthcare-BE', targetEnv)
 
 node('HRC-Kollect-Jenkins-Agent') {
+    currentBuild.description = "CI: Non-Healthcare-BE | Env: ${targetEnv} | Branch: ${params.BRANCH ?: 'main'}"
+
     cipipeline.call([
         enable_jenkins_build_param_override: true,
 
