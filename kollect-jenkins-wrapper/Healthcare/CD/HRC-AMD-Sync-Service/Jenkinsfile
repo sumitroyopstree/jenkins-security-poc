@@ -17,6 +17,7 @@ node('HRC-Kollect-Jenkins-Agent') {
 
         // APPLICATION / CONTAINER NAME
         app_name                                : currentEnv.app_name,
+        image_tag                               : imageTag,
 
         // TARGET SERVER
         server_ip                               : currentEnv.server_ip,

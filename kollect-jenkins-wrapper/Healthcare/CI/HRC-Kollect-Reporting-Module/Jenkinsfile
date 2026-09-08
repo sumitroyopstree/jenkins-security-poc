@@ -6,6 +6,8 @@ def currentEnv = inventory.ci('HRC-Kollect-Reporting-Module', targetEnv)
 def cdEnv      = inventory.cd('HRC-Kollect-Reporting-Module', targetEnv)
 
 node('HRC-Kollect-Jenkins-Agent') {
+    currentBuild.description = "CI: HRC-Kollect-Reporting-Module | Env: ${targetEnv} | Branch: ${params.BRANCH ?: 'main'}"
+
     cipipeline.call([
         enable_jenkins_build_param_override: true,
 
@@ -50,7 +52,6 @@ node('HRC-Kollect-Jenkins-Agent') {
         java_version                     : '17',
         codeartifact_dependency          : 'false',
         app_stack                        : 'java',
-        environment                      : targetEnv,
 
         // STATIC CODE ANALYSIS (SONARQUBE)
         static_code_analysis_check              : true,

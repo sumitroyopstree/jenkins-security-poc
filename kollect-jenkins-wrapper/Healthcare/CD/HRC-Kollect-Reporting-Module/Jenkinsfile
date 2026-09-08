@@ -1,7 +1,7 @@
 @Library('jenkins-shared-libraries@feature-cicd') _
 
 def targetEnv  = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
-def imageTag   = params.image_tag ?: 'latest'
+def imageTag   = (env.image_tag ?: params.image_tag ?: 'latest').trim()
 def currentEnv = inventory.cd('HRC-Kollect-Reporting-Module', targetEnv)
 
 node('HRC-Kollect-Jenkins-Agent') {
@@ -16,6 +16,7 @@ node('HRC-Kollect-Jenkins-Agent') {
 
         // APPLICATION / CONTAINER NAME
         app_name                                : currentEnv.app_name,
+        image_tag                               : imageTag,
 
         // TARGET SERVER
         server_ip                               : currentEnv.server_ip,
