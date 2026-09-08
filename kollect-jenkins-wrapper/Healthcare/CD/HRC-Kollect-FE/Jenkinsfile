@@ -1,26 +1,39 @@
 @Library('jenkins-shared-libraries@feature-cicd') _
 def cdpipeline = new opstree.cd.templates.s3_fe.s3_deployment()
 
-def targetEnv  = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
+def targetEnv    = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
+def artifactName = (env.artifact_name ?: params.artifact_name ?: env.image_tag ?: params.image_tag ?: 'latest').trim()
+
 def currentEnv = inventory.cd('HRC-Kollect-FE', targetEnv)
+def ciEnv      = inventory.ci('HRC-Kollect-FE', targetEnv)
 
 node('HRC-Kollect-Jenkins-Agent') {
+    currentBuild.description = "CD: HRC-Kollect-FE | Env: ${targetEnv} | Artifact: ${artifactName}"
+
     cdpipeline.call([
-        enable_jenkins_build_param_override: true,
+        enable_jenkins_build_param_override             : true,
 
         // WORKSPACE MANAGEMENT
-        clean_workspace      : true,
+        clean_workspace                                 : true,
 
-        // S3 & CLOUDFRONT DEPLOYMENT (DYNAMIC BY ENVIRONMENT)
-        s3_bucket            : currentEnv.s3_bucket,
-        cloudfront_dist_id   : currentEnv.cloudfront_id,
-        aws_region           : 'us-east-1',
-        artifact_source_path : 'dist/',
+        // ARTIFACT CONFIGURATION (Download from CI S3 bucket)
+        artifact_name                                   : artifactName,
+        artifact_s3_bucket_name                         : ciEnv.artifact_s3_bucket_name,
+        artifact_s3_bucket_aws_region                   : ciEnv.aws_region,
+        artifact_s3_keypath_destination                 : ciEnv.artifact_s3_keypath,
+        jenkins_aws_credentials_id                      : ciEnv.credentials_id,
+
+        // TARGET S3 & CLOUDFRONT DEPLOYMENT (dynamic by environment)
+        app_name                                        : 'hrc-kollect-fe',
+        s3_bucket                                       : currentEnv.s3_bucket,
+        cloudfront_dist_id                              : currentEnv.cloudfront_id,
+        aws_region                                      : 'us-east-1',
+        artifact_source_path                            : 'dist/',
 
         // NOTIFICATION
-        notification_enabled                    : true,
-        notification_channel                    : 'gmail',
-        gmail_notification_from_email_id        : 'smtp@kernernorland.com',
-        gmail_notification_recipients_email_ids : 'asangai@healthreconconnect.com'
+        notification_enabled                            : true,
+        notification_channel                            : 'gmail',
+        gmail_notification_from_email_id                : 'smtp@kernernorland.com',
+        gmail_notification_recipients_email_ids         : 'asangai@healthreconconnect.com'
     ])
 }

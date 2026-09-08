@@ -25,34 +25,90 @@ def call(Map step_params) {
         def image_tag          = params.image_tag ?: 'latest'
         def environment_name   = params.ENVIRONMENT ?: 'dev'
 
+        def artifact_name_disp = get_params_value(enableOverride, step_params, 'artifact_name') ?: 'latest'
+        def artifact_s3_bucket = get_params_value(enableOverride, step_params, 'artifact_s3_bucket_name') ?: ''
+        def artifact_s3_path   = get_params_value(enableOverride, step_params, 'artifact_s3_keypath_destination') ?: ''
+        def aws_creds_id       = get_params_value(enableOverride, step_params, 'jenkins_aws_credentials_id') ?: ''
+        def artifact_s3_region = get_params_value(enableOverride, step_params, 'artifact_s3_bucket_aws_region') ?: aws_region
+        def app_name           = get_params_value(enableOverride, step_params, 'app_name') ?: s3_bucket
+
         def deployInfo = [
-            'S3 Bucket'               : s3_bucket,
-            'CloudFront Distribution' : cloudfront_dist_id,
-            'AWS Region'              : aws_region,
-            'Tag / Version'           : image_tag,
-            'Environment'             : environment_name
+            'Application'            : app_name,
+            'Environment'            : environment_name.toUpperCase(),
+            'Artifact'               : artifact_name_disp,
+            'CI S3 Path'             : "s3://${artifact_s3_bucket}/${artifact_s3_path}/${artifact_name_disp}",
+            'Target S3 Bucket'       : s3_bucket,
+            'CloudFront Distribution': cloudfront_dist_id,
+            'AWS Region'             : aws_region
         ]
 
         try {
-            stage('Get Pipeline ID') {
-                currentBuild.description = "Deploy Frontend [Build: ${image_tag}] → S3:${s3_bucket} (${environment_name})"
-                echo "Pipeline ID: ${currentBuild.number}"
+            stage('Deployment Plan & Approval') {
+                def detailLines = deployInfo.collect { k, v -> "${k.padRight(25)}: ${v}" }.join('\n')
+                echo """
+=======================================================
+ DEPLOYMENT TARGET DETAILS
+=======================================================
+${detailLines}
+======================================================="""
+
+                currentBuild.description = "CD: ${app_name} | Env: ${environment_name.toUpperCase()} | ${artifact_name_disp}"
+
+                input(
+                    id      : 'DeployApproval',
+                    message : "Deploy ${app_name} (${artifact_name_disp}) to ${environment_name.toUpperCase()} → s3://${s3_bucket}/?",
+                    ok      : 'Approve & Deploy'
+                )
             }
 
             stage('Deploy to S3') {
-                sh """#!/bin/bash
-                    set -e
-                    # Backup existing build to pipeline number subfolder for easy rollback
-                    aws s3 mv s3://${s3_bucket}/ s3://${s3_bucket}/${currentBuild.number}/ \\
-                        --recursive --region ${aws_region} 2>/dev/null || true
+                withAWS(credentials: aws_creds_id, region: aws_region) {
+                    sh """#!/bin/bash
+                        set -e
 
-                    # Copy new build to S3 root
-                    if [ -d "${artifact_source}" ]; then
-                        aws s3 cp ${artifact_source} s3://${s3_bucket}/ --recursive --region ${aws_region}
-                    else
-                        echo "Artifact source ${artifact_source} not found in workspace, verifying S3..."
-                    fi
-                """
+                        WORK_DIR=\$(mktemp -d)
+                        echo "Working directory: \$WORK_DIR"
+
+                        # -------------------------------------------------------
+                        # Step 1: Download artifact from CI S3 bucket
+                        # -------------------------------------------------------
+                        if [ -n "${artifact_name_disp}" ] && [ "${artifact_name_disp}" != "latest" ]; then
+                            echo "Downloading artifact: ${artifact_name_disp}"
+                            aws s3 cp "s3://${artifact_s3_bucket}/${artifact_s3_path}/${artifact_name_disp}" "\$WORK_DIR/${artifact_name_disp}" \\
+                                --region ${artifact_s3_region}
+
+                            echo "Extracting artifact..."
+                            tar -xzf "\$WORK_DIR/${artifact_name_disp}" -C "\$WORK_DIR"
+
+                            # Auto-detect build output folder
+                            if   [ -d "\$WORK_DIR/dist" ];   then DEPLOY_SRC="\$WORK_DIR/dist"
+                            elif [ -d "\$WORK_DIR/.next" ];  then DEPLOY_SRC="\$WORK_DIR/.next"
+                            elif [ -d "\$WORK_DIR/build" ];  then DEPLOY_SRC="\$WORK_DIR/build"
+                            else                                  DEPLOY_SRC="\$WORK_DIR"
+                            fi
+                            echo "Using build output: \$DEPLOY_SRC"
+                        else
+                            DEPLOY_SRC="${artifact_source}"
+                            echo "No artifact specified — using local path: \$DEPLOY_SRC"
+                        fi
+
+                        # -------------------------------------------------------
+                        # Step 2: Backup existing S3 content for rollback
+                        # -------------------------------------------------------
+                        echo "Backing up current S3 content to build #${currentBuild.number}..."
+                        aws s3 mv s3://${s3_bucket}/ s3://${s3_bucket}/${currentBuild.number}/ \\
+                            --recursive --region ${aws_region} 2>/dev/null || true
+
+                        # -------------------------------------------------------
+                        # Step 3: Deploy new build to target S3 bucket
+                        # -------------------------------------------------------
+                        echo "Deploying to s3://${s3_bucket}/..."
+                        aws s3 cp "\$DEPLOY_SRC" s3://${s3_bucket}/ --recursive --region ${aws_region}
+                        echo "Deployment complete: s3://${s3_bucket}/"
+
+                        rm -rf "\$WORK_DIR"
+                    """
+                }
             }
 
             stage('CloudFront Cache Invalidation') {
