@@ -122,11 +122,13 @@ def call(String type, String appName, String envName = 'TEST') {
             'DEMO': [ip: '10.2.40.110', path: '/opt/non-healthcare-demo/backend', app: 'non-healthcare-demo-backend', ssh: 'Non-Healthcare-demo-server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:demo.nonhealthcare.com-fpjxjz']
         ],
         'Non-Healthcare-Cron': [
+            'TEST': [ip: '10.2.30.254', path: '/opt/non-healthcare-test/cron', app: 'non-healthcare-test-cron', ssh: 'HRC-Kollect-Test-Server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.hrckollect.com-tDjPIP'],
             'DEV' : [ip: '10.2.40.183', path: '/opt/non-healthcare-dev/cron', app: 'non-healthcare-dev-cron', ssh: 'Non-Healthcare-dev-server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.nonhealthcare.com-kg1Ktx'],
             'QA'  : [ip: '10.2.40.239', path: '/opt/non-healthcare-qa/cron', app: 'non-healthcare-qa-cron', ssh: 'Non-Healthcare-qa-server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:qa.nonhealthcare.com-3xKQQa'],
             'DEMO': [ip: '10.2.40.110', path: '/opt/non-healthcare-demo/cron', app: 'non-healthcare-demo-cron', ssh: 'Non-Healthcare-demo-server', secret: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:demo.nonhealthcare.com-fpjxjz']
         ],
         'Non-Healthcare-FE': [
+            'TEST': [s3_bucket: 'hrc-cicd-test-bucket', cloudfront_id: 'EFTZC3GRKKII0'],
             'DEV' : [s3_bucket: 'non-healthcare-kollect-dev-fe', cloudfront_id: 'EFTZC3GRKKII0'],
             'QA'  : [s3_bucket: 'non-healthcare-kollect-qa-fe', cloudfront_id: 'E2H5KARQB4008Q'],
             'DEMO': [s3_bucket: 'non-healthcare-kollect-demo-fe', cloudfront_id: 'E2H5KARQB4008Q']

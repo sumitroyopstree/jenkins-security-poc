@@ -1,32 +1,38 @@
 @Library('jenkins-shared-libraries@feature-cicd') _
 def cdpipeline = new opstree.cd.templates.ssh_pm2.ssh_pm2_deployment()
 
-def targetEnv  = (params.ENVIRONMENT ?: 'DEV').toUpperCase()
-def currentEnv = inventory.cd('Non-Healthcare-Cron', targetEnv)
+def targetEnv    = (params.ENVIRONMENT ?: 'DEV').toUpperCase()
+def artifactName = (env.artifact_name ?: params.artifact_name ?: env.image_tag ?: params.image_tag ?: 'latest').trim()
+def currentEnv   = inventory.cd('Non-Healthcare-Cron', targetEnv)
+def ciEnv        = inventory.ci('Non-Healthcare-Cron', targetEnv)
 
 node('HRC-Kollect-Jenkins-Agent') {
+    currentBuild.description = "CD: Non-Healthcare-Cron | Env: ${targetEnv} | Artifact: ${artifactName}"
+
     cdpipeline.call([
-        enable_jenkins_build_param_override: true,
+        enable_jenkins_build_param_override     : true,
 
         // WORKSPACE MANAGEMENT
-        clean_workspace      : true,
+        clean_workspace                         : true,
 
-        // VCS MANAGEMENT
-        repo_https_url       : 'https://gitlab.healthreconconnect.com/hrc/one-kollect-scheduler.git',
-        repo_branch          : params.BRANCH ?: 'main',
-        repo_url_type        : 'http',
-        jenkins_git_creds_id : 'hasantha-hrc-gitlab-access',
-        source_code_path     : '',
+        // ARTIFACT CONFIGURATION (S3)
+        artifact_s3_bucket_name                 : ciEnv.artifact_s3_bucket_name,
+        artifact_s3_bucket_aws_region           : ciEnv.aws_region,
+        artifact_s3_keypath_destination         : ciEnv.artifact_s3_keypath,
+        artifact_name                           : artifactName,
+        jenkins_aws_credentials_id              : ciEnv.credentials_id,
 
-        // DYNAMIC DEPLOYMENT CONFIG (BY ENVIRONMENT)
-        server_ip            : currentEnv.server_ip,
-        deploy_dir           : currentEnv.deploy_dir,
-        app_name             : currentEnv.app_name,
-        node_version         : 'v18.0.0',
-        ssh_credentials_id   : currentEnv.ssh_creds,
-        secret_arn           : currentEnv.secret_arn,
-        package_manager      : 'npm',
-        pm2_services_list    : [
+        // TARGET VM & ENVIRONMENT BINDINGS
+        server_ip                               : currentEnv.server_ip,
+        deploy_dir                              : currentEnv.deploy_dir,
+        app_name                                : currentEnv.app_name,
+        node_version                            : 'v18.0.0',
+        ssh_credentials_id                      : currentEnv.ssh_creds,
+        secret_arn                              : currentEnv.secret_arn,
+        secret_region                           : 'us-east-1',
+        package_manager                         : 'npm',
+        start_command                           : 'node start-crons.js',
+        pm2_services_list                       : [
             'cancelCampaignQueuedData',
             'paymentAutoDebit',
             'schedulePaperCampaign',

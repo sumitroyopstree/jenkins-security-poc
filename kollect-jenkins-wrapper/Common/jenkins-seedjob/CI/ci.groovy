@@ -36,7 +36,7 @@ def nonHealthcareCommonParameters = [
     [
         type: 'choice',
         name: 'ENVIRONMENT',
-        choices: ['DEV', 'QA', 'DEMO'],
+        choices: ['TEST', 'DEV', 'QA', 'DEMO'],
         description: 'Select target environment'
     ],
     [

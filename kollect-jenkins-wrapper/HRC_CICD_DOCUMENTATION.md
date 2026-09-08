@@ -67,9 +67,9 @@ hrc/
 | **HRC** | `HRC-Kollect-Pay-Portal-Backend` | Node.js Backend | SSH + PM2 | `10.2.40.133` | DEV, DEMO, QA, STG, PROD |
 | **HRC** | `HRC-Kollect-Reporting-Module` | Java 17 Maven | Docker + ECR | `167121004129.dkr.ecr...` | DEV, DEMO, QA, STG, PROD |
 | **HRC** | `HRC-AMD-Sync-Service` | Java 17 Maven | Docker + ECR | `167121004129.dkr.ecr...` | STG, QA, DEMO, PROD |
-| **Non-Healthcare** | `Non-Healthcare-BE` | Node.js Backend | SSH + PM2 | `10.2.40.183` | DEV, QA, DEMO |
-| **Non-Healthcare** | `Non-Healthcare-Cron` | Node.js Scheduler | SSH + PM2 | `10.2.40.183` | DEV, QA, DEMO |
-| **Non-Healthcare** | `Non-Healthcare-FE` | React SPA | AWS S3 + CloudFront | `s3://non-healthcare-kollect-dev-fe` | DEV, QA, DEMO |
+| **Non-Healthcare** | `Non-Healthcare-BE` | Node.js Backend | SSH + PM2 | `10.2.40.183` | TEST, DEV, QA, DEMO |
+| **Non-Healthcare** | `Non-Healthcare-Cron` | Node.js Scheduler | SSH + PM2 | `10.2.40.183` | TEST, DEV, QA, DEMO |
+| **Non-Healthcare** | `Non-Healthcare-FE` | React SPA | AWS S3 + CloudFront | `s3://non-healthcare-kollect-dev-fe` | TEST, DEV, QA, DEMO |
 
 ---
 
@@ -77,6 +77,6 @@ hrc/
 
 Har pipeline mein ye standard build parameters parameterized hain:
 1. **`SERVICE_NAME` (Choice):** Specific service select karne ke liye.
-2. **`ENVIRONMENT` (Choice):** HRC ke liye `['DEV', 'DEMO', 'QA', 'STG', 'PROD']` aur Non-Healthcare ke liye `['DEV', 'QA', 'DEMO']`.
+2. **`ENVIRONMENT` (Choice):** HRC ke liye `['DEV', 'DEMO', 'QA', 'STG', 'PROD']` aur Non-Healthcare ke liye `['TEST', 'DEV', 'QA', 'DEMO']`.
 3. **`BRANCH` (String):** Git branch override (Default `main`).
 4. **`TRIGGER_CD` (Boolean):** CI success ke baad CD pipeline automatic trigger karne ke liye.
