@@ -3,7 +3,7 @@
 def cdpipeline = new opstree.cd.templates.ssh_pm2.ssh_pm2_deployment()
 def targetEnv = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
 
-node('any') {
+node {
     currentBuild.description = "CD: jenkins-security-poc | Env: ${targetEnv} | Image: ${params.DOCKER_IMAGE}:${params.DOCKER_TAG}"
 
     cdpipeline.call([

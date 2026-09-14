@@ -3,7 +3,7 @@
 def cipipeline = new opstree.ci.templates.nodejs_ci.nodejs_ci()
 def targetEnv = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
 
-node('any') {
+node {
     currentBuild.description = "CI: jenkins-security-poc | Env: ${targetEnv} | Branch: ${params.BRANCH ?: 'main'}"
 
     cipipeline.call([
