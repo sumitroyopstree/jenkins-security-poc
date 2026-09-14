@@ -25,9 +25,153 @@ def get_params_value(Boolean enableOverride, Map step_params, String paramName) 
     return value
 }
 
+def docker_deployment(Map step_params) {
+    def image = step_params.docker_image?.toString()?.trim()
+    def tag = step_params.docker_tag?.toString()?.trim()
+    def containerName = step_params.docker_container_name?.toString()?.trim()
+    def serverIp = step_params.server_ip?.toString()?.trim()
+    def sshUser = step_params.ssh_user?.toString()?.trim() ?: 'ubuntu'
+    def sshCredentialsId = step_params.ssh_credentials_id?.toString()?.trim()
+    def hostPort = step_params.docker_host_port?.toString()?.trim()
+    def containerPort = step_params.docker_container_port?.toString()?.trim()
+    def restartPolicy = step_params.docker_restart_policy?.toString()?.trim() ?: 'unless-stopped'
+    def healthEndpoint = step_params.health_check_endpoint?.toString()?.trim()
+    def dockerRunArgs = step_params.docker_run_args?.toString()?.trim() ?: ''
+
+    if (!image || !tag || tag == 'latest' || !containerName || !serverIp || !sshCredentialsId || !hostPort || !containerPort || !healthEndpoint) {
+        error('Docker deployment requires an immutable docker_tag, image, container, server, SSH credential, ports, and health endpoint.')
+    }
+
+    def fullImage = "${image}:${tag}"
+    def deployInfo = [
+        'Docker Image' : fullImage,
+        'Container'    : containerName,
+        'Target Server': "${sshUser}@${serverIp}",
+        'Ports'        : "${hostPort}:${containerPort}",
+        'Health Check' : healthEndpoint
+    ]
+
+    try {
+        stage('Docker Deployment Plan & Approval') {
+            currentBuild.description = "Docker Deploy: ${fullImage} -> ${serverIp}"
+            echo deployInfo.collect { key, value -> "${key}: ${value}" }.join('\n')
+            input(
+                id      : 'docker-deploy-approval',
+                message : "Deploy ${fullImage} to ${sshUser}@${serverIp}?",
+                ok      : 'Approve & Deploy'
+            )
+        }
+
+        stage('Pull and Start Docker Container') {
+            sshagent([sshCredentialsId]) {
+                sh """#!/bin/bash
+                    set -euo pipefail
+                    ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes '${sshUser}@${serverIp}' 'bash -s' <<'EOF'
+set -euo pipefail
+
+IMAGE='${image}'
+TAG='${tag}'
+FULL_IMAGE="\${IMAGE}:\${TAG}"
+CONTAINER='${containerName}'
+PREVIOUS_IMAGE=""
+
+if docker inspect "\${CONTAINER}" >/dev/null 2>&1; then
+    PREVIOUS_IMAGE=\$(docker inspect --format '{{.Config.Image}}' "\${CONTAINER}" 2>/dev/null || true)
+    printf '%s\n' "\${PREVIOUS_IMAGE}" > "\${HOME}/.jenkins-security-poc-previous-image"
+fi
+
+echo "Pulling \${FULL_IMAGE}"
+docker pull "\${FULL_IMAGE}"
+
+docker stop "\${CONTAINER}" >/dev/null 2>&1 || true
+docker rm "\${CONTAINER}" >/dev/null 2>&1 || true
+
+docker run -d \\
+    --name "\${CONTAINER}" \\
+    --restart '${restartPolicy}' \\
+    -p '${hostPort}:${containerPort}' \\
+    ${dockerRunArgs} \\
+    "\${FULL_IMAGE}"
+EOF
+                """
+            }
+        }
+
+        stage('Docker Health Check') {
+            def healthStatus = 0
+            sshagent([sshCredentialsId]) {
+                healthStatus = sh(
+                    returnStatus: true,
+                    script: """#!/bin/bash
+                        set -u
+                        ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes '${sshUser}@${serverIp}' 'bash -s' <<'EOF'
+set -u
+HEALTHY=0
+for attempt in \$(seq 1 15); do
+    STATUS=\$(curl -sS -o /tmp/jenkins-security-poc-health -w '%{http_code}' '${healthEndpoint}' || true)
+    BODY=\$(cat /tmp/jenkins-security-poc-health 2>/dev/null || true)
+    echo "Health attempt \${attempt}/15: HTTP \${STATUS}"
+    if [[ "\${STATUS}" =~ ^2[0-9][0-9]$ ]] && echo "\${BODY}" | grep -Eiq 'up|ok|healthy'; then
+        HEALTHY=1
+        break
+    fi
+    sleep 3
+done
+
+if [ "\${HEALTHY}" -eq 1 ]; then
+    echo '[SUCCESS] Docker deployment is healthy.'
+    exit 0
+fi
+
+echo '[ERROR] Docker deployment health check failed.'
+docker logs --tail 80 '${containerName}' || true
+exit 1
+EOF
+                    """
+                )
+            }
+
+            if (healthStatus != 0) {
+                stage('Docker Rollback') {
+                    sshagent([sshCredentialsId]) {
+                        sh """#!/bin/bash
+                            set -e
+                            ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes '${sshUser}@${serverIp}' 'bash -s' <<'EOF'
+set -euo pipefail
+CONTAINER='${containerName}'
+PREVIOUS_IMAGE=\$(cat "\${HOME}/.jenkins-security-poc-previous-image" 2>/dev/null || true)
+
+if [ -z "\${PREVIOUS_IMAGE}" ]; then
+    echo '[ROLLBACK] No previous Docker image was recorded; leaving the failed deployment for investigation.'
+    exit 1
+fi
+
+echo "[ROLLBACK] Restoring \${PREVIOUS_IMAGE}"
+docker pull "\${PREVIOUS_IMAGE}"
+docker stop "\${CONTAINER}" >/dev/null 2>&1 || true
+docker rm "\${CONTAINER}" >/dev/null 2>&1 || true
+docker run -d --name "\${CONTAINER}" --restart '${restartPolicy}' -p '${hostPort}:${containerPort}' ${dockerRunArgs} "\${PREVIOUS_IMAGE}"
+EOF
+                        """
+                    }
+                }
+                error("Docker deployment failed for ${fullImage}.")
+            }
+        }
+    } catch (Exception e) {
+        currentBuild.result = 'FAILURE'
+        throw e
+    }
+}
+
 def call(Map step_params) {
     ansiColor('xterm') {
         def enableOverride = step_params.enable_jenkins_build_param_override?.toBoolean() ?: false
+
+        if (step_params.deployment_mode?.toString()?.equalsIgnoreCase('docker')) {
+            docker_deployment(step_params)
+            return
+        }
 
         def workspace = new workspace_management()
         def notify    = new notify()

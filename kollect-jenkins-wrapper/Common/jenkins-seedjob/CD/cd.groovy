@@ -89,6 +89,15 @@ def hrcCdJobs = [
 
 // Non-Healthcare Project CD Jobs Map (In Dedicated Folder)
 def nonHealthcareCdJobs = [
+    'jenkins-security-poc-cd': [
+        scriptPath   : 'kollect-jenkins-wrapper/Non-Healthcare/CD/Non-Healthcare-BE/Jenkinsfile',
+        parameters   : [
+            [type: 'string', name: 'DOCKER_IMAGE', defaultValue: 'royopstree/jenkins-security-poc', description: 'Exact DockerHub image repository'],
+            [type: 'string', name: 'DOCKER_TAG', defaultValue: '', description: 'Immutable Git SHA image tag'],
+            [type: 'string', name: 'BRANCH', defaultValue: 'main', description: 'Application branch metadata'],
+            [type: 'choice', name: 'ENVIRONMENT', choices: ['TEST'], description: 'Deployment environment']
+        ]
+    ],
     'Non-Healthcare-BE': [
         scriptPath   : 'kollect-jenkins-wrapper/Non-Healthcare/CD/Non-Healthcare-BE/Jenkinsfile',
         parameters   : nonHealthcareCommonParameters

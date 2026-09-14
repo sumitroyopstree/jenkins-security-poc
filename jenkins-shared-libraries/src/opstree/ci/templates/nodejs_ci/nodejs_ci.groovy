@@ -333,11 +333,15 @@ def call(Map step_params) {
         notify               = new notify()
         build                = new node_build() // Delegated to opstree.common.node_build
         unittest             = new junit()
+        dockerhub            = new dockerhub_publish()
 
-        if (get_params_value(enableOverride, step_params, 'repo_url_type') == 'http') {
+        def configuredRepoUrlType = get_params_value(enableOverride, step_params, 'repo_url_type')?.toString()?.toLowerCase()
+        def repoUrlType = configuredRepoUrlType == 'https' ? 'http' : configuredRepoUrlType
+
+        if (repoUrlType == 'http') {
             repo_url = "${get_params_value(enableOverride, step_params, 'repo_https_url')}"
         }
-        else if (get_params_value(enableOverride, step_params, 'repo_url_type') == 'ssh') {
+        else if (repoUrlType == 'ssh') {
             repo_url = "${get_params_value(enableOverride, step_params, 'repo_ssh_url')}"
         }
 
@@ -347,7 +351,7 @@ def call(Map step_params) {
                     repo_url: "${repo_url}",
                     repo_branch: "${get_params_value(enableOverride, step_params, 'repo_branch')}",
                     clean_workspace: "${get_params_value(enableOverride, step_params, 'clean_workspace')}",
-                    repo_url_type: "${get_params_value(enableOverride, step_params, 'repo_url_type')}",
+                    repo_url_type: "${repoUrlType}",
                     ssh_private_key_location: "${get_params_value(enableOverride, step_params, 'ssh_private_key_location')}",
                     jenkins_git_ssh_key_id: "${get_params_value(enableOverride, step_params, 'jenkins_git_ssh_key_id')}",
                     jenkins_git_creds_id: "${get_params_value(enableOverride, step_params, 'jenkins_git_creds_id')}",
@@ -363,7 +367,7 @@ def call(Map step_params) {
                         credscan.creds_scanning_factory(
                             gitleaks_check: "${get_params_value(enableOverride, step_params, 'gitleaks_check')}",
                             repo_url: "${repo_url}",
-                            repo_url_type: "${get_params_value(enableOverride, step_params, 'repo_url_type')}",
+                            repo_url_type: "${repoUrlType}",
                             gitleaks_report_format: "${get_params_value(enableOverride, step_params, 'gitleaks_report_format')}",
                             gitleaks_report_jenkins_publish: "${get_params_value(enableOverride, step_params, 'gitleaks_report_jenkins_publish')}",
                             fail_job_if_leak_detected: "${get_params_value(enableOverride, step_params, 'fail_job_if_leak_detected')}",
@@ -376,7 +380,7 @@ def call(Map step_params) {
                     tasks['OWASPCodeDepedencyScanning'] = {
                         dependencyscan.dependency_scanning_factory(
                             repo_url: "${repo_url}",
-                            repo_url_type: "${get_params_value(enableOverride, step_params, 'repo_url_type')}",
+                            repo_url_type: "${repoUrlType}",
                             owasp_project_name: "${get_params_value(enableOverride, step_params, 'owasp_project_name')}",
                             owasp_report_publish: "${get_params_value(enableOverride, step_params, 'owasp_report_publish')}",
                             owasp_report_format: "${get_params_value(enableOverride, step_params, 'owasp_report_format')}",
@@ -623,6 +627,16 @@ def call(Map step_params) {
             else {
                 echo 'Skipping Publish Artifact stage as it is disabled.'
             }
+
+            if (get_params_value(enableOverride, step_params, 'dockerhub_publish_check')?.toString()?.toBoolean()) {
+                stage('Push Docker Image to DockerHub') {
+                    dockerhub.publish(
+                        repo_url: repo_url,
+                        image_name: get_params_value(enableOverride, step_params, 'image_name'),
+                        dockerhub_credentials_id: get_params_value(enableOverride, step_params, 'dockerhub_credentials_id')
+                    )
+                }
+            }
         } catch (Exception e) {
             currentBuild.result = 'FAILURE'
             if (get_params_value(enableOverride, step_params, 'notification_enabled') != null && get_params_value(enableOverride, step_params, 'notification_enabled').toBoolean()) {
@@ -648,15 +662,18 @@ def call(Map step_params) {
                     returnStdout: true
                 ).trim()
 
-                // If an S3 artifact was generated in CI, use its filename; otherwise default to git commit tag
-                def deploy_artifact = env.GENERATED_ARTIFACT_NAME ?: docker_image_tag
-                def param_name = get_params_value(enableOverride, step_params, 'image_tag_build_param') ?: 'artifact_name'
-
                 def targetDeployEnv = "${params.ENVIRONMENT ?: get_params_value(enableOverride, step_params, 'environment') ?: 'TEST'}".toUpperCase()
+                def dockerImage = get_params_value(enableOverride, step_params, 'image_name') ?: env.DOCKER_IMAGE
+                def dockerTag = env.DOCKER_TAG ?: docker_image_tag
+
+                if (!dockerImage || !dockerTag || dockerTag == 'latest') {
+                    error('Docker image and immutable Docker tag are required for the CD handoff.')
+                }
 
                 build job: get_params_value(enableOverride, step_params, 'trigger_cd_pipeline_path'),
                     parameters: [
-                        string(name: param_name, value: deploy_artifact),
+                        string(name: 'DOCKER_IMAGE', value: dockerImage),
+                        string(name: 'DOCKER_TAG', value: dockerTag),
                         string(name: 'BRANCH', value: "${get_params_value(enableOverride, step_params, 'repo_branch') ?: 'main'}"),
                         string(name: 'ENVIRONMENT', value: targetDeployEnv)
                     ], 

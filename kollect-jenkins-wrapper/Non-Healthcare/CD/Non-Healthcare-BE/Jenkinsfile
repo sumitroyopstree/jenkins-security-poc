@@ -1,43 +1,25 @@
 @Library('jenkins-shared-libraries@feature-cicd') _
+
 def cdpipeline = new opstree.cd.templates.ssh_pm2.ssh_pm2_deployment()
+def targetEnv = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
 
-def targetEnv    = (params.ENVIRONMENT ?: 'DEV').toUpperCase()
-def artifactName = (env.artifact_name ?: params.artifact_name ?: env.image_tag ?: params.image_tag ?: 'latest').trim()
-def currentEnv   = inventory.cd('Non-Healthcare-BE', targetEnv)
-def ciEnv        = inventory.ci('Non-Healthcare-BE', targetEnv)
-
-node('HRC-Kollect-Jenkins-Agent') {
-    currentBuild.description = "CD: Non-Healthcare-BE | Env: ${targetEnv} | Artifact: ${artifactName}"
+node('any') {
+    currentBuild.description = "CD: jenkins-security-poc | Env: ${targetEnv} | Image: ${params.DOCKER_IMAGE}:${params.DOCKER_TAG}"
 
     cdpipeline.call([
         enable_jenkins_build_param_override: true,
-
-        // WORKSPACE MANAGEMENT
-        clean_workspace      : true,
-
-        // ARTIFACT CONFIGURATION (S3)
-        artifact_s3_bucket_name         : ciEnv.artifact_s3_bucket_name,
-        artifact_s3_bucket_aws_region   : ciEnv.aws_region,
-        artifact_s3_keypath_destination : ciEnv.artifact_s3_keypath,
-        artifact_name                   : artifactName,
-        jenkins_aws_credentials_id      : ciEnv.credentials_id,
-
-        // DYNAMIC DEPLOYMENT CONFIG (BY ENVIRONMENT)
-        server_ip            : currentEnv.server_ip,
-        deploy_dir           : currentEnv.deploy_dir,
-        app_name             : currentEnv.app_name,
-        node_version         : 'v16.17.0',
-        ssh_credentials_id   : currentEnv.ssh_creds,
-        secret_arn           : currentEnv.secret_arn,
-        secret_region        : 'us-east-1',
-        package_manager      : 'yarn',
-        start_command        : 'yarn start',
-        health_check_endpoint : 'http://127.0.0.1:80/api/health',
-
-        // NOTIFICATION
-        notification_enabled                    : true,
-        notification_channel                    : 'gmail',
-        gmail_notification_from_email_id        : 'smtp@kernernorland.com',
-        gmail_notification_recipients_email_ids : 'asangai@healthreconconnect.com'
+        deployment_mode                   : 'docker',
+        docker_image                      : params.DOCKER_IMAGE ?: 'royopstree/jenkins-security-poc',
+        docker_tag                        : params.DOCKER_TAG,
+        docker_container_name             : 'jenkins-security-poc',
+        docker_host_port                  : 3000,
+        docker_container_port             : 3000,
+        docker_restart_policy             : 'unless-stopped',
+        server_ip                         : '54.91.86.168',
+        ssh_user                          : 'ubuntu',
+        ssh_credentials_id                : 'aws-vm-ssh-key',
+        health_check_endpoint             : 'http://localhost:3000/health',
+        docker_run_args                   : '',
+        notification_enabled              : false
     ])
 }

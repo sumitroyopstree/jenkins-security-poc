@@ -89,6 +89,10 @@ def hrcCiJobs = [
 
 // Non-Healthcare Project CI Jobs Map (In Dedicated Folder)
 def nonHealthcareCiJobs = [
+    'jenkins-security-poc-ci': [
+        scriptPath   : 'kollect-jenkins-wrapper/Non-Healthcare/CI/Non-Healthcare-BE/Jenkinsfile',
+        parameters   : nonHealthcareCommonParameters
+    ],
     'Non-Healthcare-BE': [
         scriptPath   : 'kollect-jenkins-wrapper/Non-Healthcare/CI/Non-Healthcare-BE/Jenkinsfile',
         parameters   : nonHealthcareCommonParameters
