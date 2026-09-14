@@ -610,7 +610,7 @@ else
     APP_RESTARTS=\$(\$PM2_BIN jlist 2>/dev/null | jq -r ".[] | select(.name==\"${app_name}\" or .pm2_env.pm_cwd==\"${deploy_dir}\") | .pm2_env.restart_time" 2>/dev/null | head -n 1)
 
     if [ "\$APP_STATUS" = "online" ] && [ -n "\$APP_PID" ] && [ "\$APP_PID" != "0" ]; then
-        DETECTED_PORT=\$(sudo ss -tulpn 2>/dev/null | grep "pid=\${APP_PID}" | awk '{print \$5}' | awk -F: '{print \$NF}' | head -n 1)
+        DETECTED_PORT=\$(sudo ss -tulpn 2>/dev/null | grep "pid=\${APP_PID}" | sed -E 's/.*:([0-9]+).*/\1/' | head -n 1)
         if [ -n "\$DETECTED_PORT" ]; then
             echo "[INFO] Health check on ${health_check_endpoint} returned \$HTTP_STATUS, but process (PID \$APP_PID) is listening on port \${DETECTED_PORT}!"
             FALLBACK_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:\${DETECTED_PORT}/" || true)
