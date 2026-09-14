@@ -1,0 +1,13 @@
+{
+  "name": "jenkins-security-poc",
+  "version": "1.0.0",
+  "description": "Intentionally vulnerable Node.js application for Jenkins security pipeline testing",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js"
+  },
+  "dependencies": {
+    "express": "4.17.1",
+    "lodash": "4.17.15"
+  }
+}
