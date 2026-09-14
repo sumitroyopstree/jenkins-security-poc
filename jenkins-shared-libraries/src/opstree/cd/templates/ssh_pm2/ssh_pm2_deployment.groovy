@@ -108,7 +108,7 @@ EOF
 set -u
 HEALTHY=0
 for attempt in \$(seq 1 15); do
-    STATUS=\$(curl -sS -o /tmp/jenkins-security-poc-health -w '%{http_code}' '${healthEndpoint}' || true)
+    STATUS=`curl -sS -o /tmp/jenkins-security-poc-health -w '%{http_code}' '${healthEndpoint}' || true`
     BODY=\$(cat /tmp/jenkins-security-poc-health 2>/dev/null || true)
     echo "Health attempt \${attempt}/15: HTTP \${STATUS}"
     if [[ "\${STATUS}" =~ ^2[0-9][0-9]$ ]] && echo "\${BODY}" | grep -Eiq 'up|ok|healthy'; then
