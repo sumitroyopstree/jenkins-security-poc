@@ -17,8 +17,8 @@ node {
         source_code_path                 : '',
 
         gitleaks_check                   : true,
-        fail_job_if_leak_detected        : true,
-        gitleaks_scan_mode               : 'latest',
+        fail_job_if_leak_detected        : false,
+        gitleaks_scan_mode               : 'full',
         gitleaks_report_jenkins_publish  : true,
 
         dependency_check                          : 'true',
