@@ -1,0 +1,57 @@
+@Library('jenkins-shared-libraries@feature-cicd') _
+def cdpipeline = new opstree.cd.templates.ssh_pm2.ssh_pm2_deployment()
+
+def targetEnv = (params.ENVIRONMENT ?: 'DEV').toUpperCase()
+
+def envMap = [
+    'DEV' : [server_ip: '10.2.40.133', deploy_dir: '/opt/hrc-kollect-dev/cron', app_name: 'hrc-kollect-dev-cron', ssh_creds: 'HRC-Kollect-Dev-Server', secret_arn: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.hrckollect.com-tDjPIP'],
+    'QA'  : [server_ip: '10.2.10.111', deploy_dir: '/opt/hrc-kollect-qa/cron', app_name: 'hrc-kollect-qa-cron', ssh_creds: 'HRC-Kollect-QA-Server', secret_arn: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:qa-hrckollect-com-0mHt87'],
+    'DEMO': [server_ip: '10.2.40.238', deploy_dir: '/opt/hrc-kollect-demo/cron', app_name: 'hrc-kollect-demo-cron', ssh_creds: 'HRC-Kollect-Demo-Server', secret_arn: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:demo-new-hrckollect-com-KrSHaN'],
+    'STG' : [server_ip: '10.2.40.170', deploy_dir: '/opt/hrc-kollect-stg/cron', app_name: 'hrc-kollect-stg-cron', ssh_creds: 'HRC-Kollect-Stg-Server', secret_arn: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:stg-hrckollect-com-oLPno0'],
+    'PROD': [server_ip: '10.2.10.118', deploy_dir: '/opt/hrc-kollect-prod/cron', app_name: 'hrc-kollect-prod-cron', ssh_creds: 'HRC-Kollect-PROD-Server', secret_arn: 'arn:aws:secretsmanager:us-east-1:167121004129:secret:portal.hrckollect.com-xvlUjU']
+]
+
+def currentEnv = envMap[targetEnv] ?: envMap['DEV']
+
+node('HRC-Kollect-Jenkins-Agent') {
+    cdpipeline.call([
+        enable_jenkins_build_param_override: true,
+
+        // WORKSPACE MANAGEMENT
+        clean_workspace      : true,
+
+        // VCS MANAGEMENT
+        repo_https_url       : 'https://gitlab.healthreconconnect.com/hrc/kollect-scheduler.git',
+        repo_branch          : params.BRANCH ?: 'main',
+        repo_url_type        : 'http',
+        jenkins_git_creds_id : 'hasantha-hrc-gitlab-access',
+        source_code_path     : '',
+
+        // DYNAMIC DEPLOYMENT CONFIG (BY ENVIRONMENT)
+        server_ip            : currentEnv.server_ip,
+        deploy_dir           : currentEnv.deploy_dir,
+        app_name             : currentEnv.app_name,
+        node_version         : 'v18.0.0',
+        ssh_credentials_id   : currentEnv.ssh_creds,
+        secret_arn           : currentEnv.secret_arn,
+        package_manager      : 'npm',
+        pm2_services_list    : [
+            'cancelCampaignQueuedData',
+            'paymentAutoDebit',
+            'schedulePaperCampaign',
+            'sendEmailDeamon',
+            'sendPaperTemplate',
+            'sendSmsDeamon',
+            'smsCampaignSchedule',
+            'smsCampaignScheduleDataForChunkTable',
+            'squareRefreshToken',
+            'userInactiveProcess'
+        ],
+
+        // NOTIFICATION
+        notification_enabled                    : true,
+        notification_channel                    : 'gmail',
+        gmail_notification_from_email_id        : 'smtp@kernernorland.com',
+        gmail_notification_recipients_email_ids : 'asangai@healthreconconnect.com'
+    ])
+}
