@@ -1,0 +1,296 @@
+pipeline {
+ 
+    agent { label 'HRC-Kollect-Jenkins-Agent' }
+ 
+    environment {
+ 
+        // environment variables
+ 
+        PROJECT = 'hrc-kollect-dev-backend'
+ 
+        SONARQUBE = 'hrc-sonarqube-dev'  // Jenkins credential ID for token
+ 
+    }
+ 
+    stages {
+ 
+        stage('Input GIT Branch') {
+ 
+            steps {
+ 
+                script {
+ 
+                    def branchName = input(
+ 
+                        id: 'branchInput',
+ 
+                        message: 'Please enter the Git branch name:',
+ 
+                        parameters: [
+ 
+                            string(
+ 
+                                name: 'BRANCH',
+ 
+                                defaultValue: '',
+ 
+                                description: 'Git branch name'
+ 
+                            )
+ 
+                        ]
+ 
+                    )
+ 
+                    currentBuild.description = "Building Git branch: ${branchName}"
+ 
+                    env.BRANCH_NAME = branchName
+ 
+                }
+ 
+            }
+ 
+        }
+ 
+        stage('Clean Git Workspace') {
+ 
+            steps {
+ 
+                script {
+ 
+                    sh '''
+ 
+                        if [ -d ".git" ]; then
+ 
+                            echo "Cleaning existing git workspace..."
+ 
+                            git reset --hard HEAD
+ 
+                            git clean -fd
+ 
+                        else
+ 
+                            echo "No existing Git repository found. Skipping git clean."
+ 
+                        fi
+ 
+                    '''
+ 
+                }
+ 
+            }
+ 
+        }
+ 
+stage('Checkout') {
+    steps {
+        script {
+            def branchName = env.BRANCH_NAME
+
+            if (branchName) {
+
+                if (branchName.startsWith("")) {
+
+                    deleteDir()
+
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'hasantha-hrc-gitlab-access-new',
+                            usernameVariable: 'GIT_USER',
+                            passwordVariable: 'GIT_TOKEN'
+                        )
+                    ]) {
+                        sh """
+                            set -e
+
+                            git clone https://\$GIT_USER:\$GIT_TOKEN@gitlab.healthreconconnect.com/hrc/kollect-core-service.git .
+
+                            git checkout ${branchName}
+                        """
+                    }
+
+                } else {
+                    error "Invalid branch name. The branch must start with ''."
+                }
+
+            } else {
+                error "Branch name is not provided. Please set the 'BRANCH_NAME' environment variable."
+            }
+        }
+    }
+}
+ 
+        stage('Get Pipeline ID') {
+ 
+            steps {
+ 
+                script {
+ 
+                    def pipelineID = currentBuild.number
+ 
+                    echo "Pipeline ID: ${pipelineID}"
+ 
+                    env.PIPELINE_ID = pipelineID.toString()
+ 
+                }
+ 
+            }
+ 
+        }
+ 
+ 
+/*       stage('Remove Old data - App') {
+ 
+           steps {
+ 
+              script {
+ 
+                  sshagent(['HRC-Kollect-Dev-Server']) {
+ 
+               sh """#!/bin/bash
+ 
+                   ssh -o StrictHostKeyChecking=no ubuntu@10.2.40.133 \\
+ 
+                       'cd /opt/hrc-kollect-dev/backend && pwd && rm -rf ./* && rm -rf ./.env'
+                         """
+ 
+                  }
+             }
+          }
+        }        
+ */
+        stage('Copy Changes to Server - App') {
+ 
+            steps {
+ 
+                sh '''#!/bin/bash
+ 
+                cd ${WORKSPACE}
+ 
+                tar -czf server.tar.gz .[!.]* *
+ 
+                # SCP server directory
+ 
+                scp -i /opt/dev-keys/hrc-kollect-dev.pem ./server.tar.gz ubuntu@10.2.40.133:/opt/hrc-kollect-dev/backend/
+ 
+                '''
+ 
+            }
+ 
+        }
+ 
+        stage('Create .env - App') {
+    steps {
+        script {
+            sshagent(['HRC-Kollect-Dev-Server']) {
+                sh """#!/bin/bash
+                    ssh -o StrictHostKeyChecking=no ubuntu@10.2.40.133 "
+                        cd /opt/hrc-kollect-dev/backend &&
+                        pwd &&
+                        touch .env &&
+                        echo NODE_ENV=production >> .env &&
+                        echo SECRET_KEY_MANAGER_KEY=arn:aws:secretsmanager:us-east-1:167121004129:secret:dev.hrckollect.com-tDjPIP >> .env &&
+                        echo SECRET_KEY_MANAGER_REGION=us-east-1 >> .env
+                    "
+                """
+            }
+        }
+    }
+}
+        stage('Remove Old service - App') {
+ 
+            steps {
+ 
+                script {
+ 
+                    sshagent(['HRC-Kollect-Dev-Server']) {
+ 
+                        def serviceRunning = sh (
+ 
+                        script: """#!/bin/bash
+ 
+                        ssh -o StrictHostKeyChecking=no ubuntu@10.2.40.133 \\
+ 
+                        'source /home/ubuntu/.nvm/nvm.sh && nvm use v24.6.0 && pm2 list | grep -q "hrc-kollect-dev-backend"'
+ 
+                        """,
+ 
+                    returnStatus: true
+ 
+                    )
+ 
+                if (serviceRunning == 0) {
+ 
+                    echo "Service is running, deleting..."
+ 
+                    sh """#!/bin/bash
+ 
+                        ssh -o StrictHostKeyChecking=no ubuntu@10.2.40.133 \\
+ 
+                        'source /home/ubuntu/.nvm/nvm.sh && nvm use v24.6.0 && pm2 delete hrc-kollect-dev-backend'
+ 
+                    """
+ 
+                        } else {
+ 
+                            echo "Service is not running, skipping removal."
+ 
+                        }
+ 
+                    }
+ 
+                }
+ 
+            }
+ 
+        }
+ 
+ 
+    stage('Build Backend - App') {
+        steps {
+            script {
+                sshagent(['HRC-Kollect-Dev-Server']) {
+                    sh """#!/bin/bash
+                    ssh -o StrictHostKeyChecking=no ubuntu@10.2.40.133 '
+                        set -e
+ 
+                        source /home/ubuntu/.nvm/nvm.sh
+                        nvm use v24.6.0
+                        node -v
+ 
+                        cd /opt/hrc-kollect-dev/backend
+ 
+                        # Stop old service
+                        pm2 delete hrc-kollect-dev-backend || true
+ 
+                        # Remove old files but keep .env and deployment archive
+                        find . -mindepth 1 \
+                            ! -name ".env" \
+                            ! -name "server.tar.gz" \
+                            -exec rm -rf {} + 2>/dev/null || true
+                        # Extract deployment
+                        tar -xzf server.tar.gz
+                        rm -f server.tar.gz
+ 
+                        # Install dependencies
+                        yarn --frozen-lockfile
+ 
+                        # Run migrations
+                        yarn sequelize db:migrate
+ 
+                        # Start application
+                        pm2 start "yarn start" --name hrc-kollect-dev-backend
+ 
+                        # Save PM2 configuration
+                        pm2 save
+                    '
+                    """
+                }
+            }
+        }
+    }
+ 
+    }  // <-- closes stages
+ 
+}      // <-- closes pipeline
+ 

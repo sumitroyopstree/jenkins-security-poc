@@ -1,0 +1,150 @@
+pipeline {
+    agent { label 'HRC-Kollect-Jenkins-Agent'}
+
+    stages {
+        stage('Input GIT Branch') {
+            steps {
+                script {
+                    def branchName = input(
+                        id: 'branchInput',
+                        message: 'Please enter the Git branch name:',
+                        parameters: [
+                            string(
+                                name: 'BRANCH',
+                                defaultValue: '',
+                                description: 'Git branch name'
+                            )
+                        ]
+                    )
+                    currentBuild.description = "Building Git branch: ${branchName}"
+                    env.Branch_Name = branchName
+                }
+            }
+        }
+        stage('Checkout') {
+            steps{
+                script {
+                    def branchName = env.Branch_Name
+                    if (branchName) {
+                        if (branchName.startsWith("")) {
+                            git branch: branchName,
+                                changelog: false,
+                                credentialsId: 'hasantha-hrc-gitlab-access',
+                                poll: false,
+                                url: 'https://gitlab.healthreconconnect.com/hrc/amd-sync-service.git'
+                        } else {
+                            error "Invalid branch name. The branch must start with 'any'."
+                        }
+                    } else {
+                        error "Branch name is not provided. Please set the 'Branch_Name' environment variable."
+                    }
+                }
+            }
+        }
+        stage('Get App Version') {
+            steps {
+                script {
+                    def appVersion = sh(script: "cd /opt/hrc-kollect/workspace/HRC-AMD-Sync-Service-DEMO/ && mvn help:evaluate -Dexpression=project.version -q -DforceStdout", returnStdout: true).trim()
+                    echo "App Version: ${appVersion}"
+                    env.APP_VERSION = appVersion
+                }
+            }
+        }
+        stage('Get Pipeline ID') {
+            steps {
+                script {
+                    def pipelineID = currentBuild.number
+                    echo "Pipeline ID: ${pipelineID}"
+                    env.PIPELINE_ID = pipelineID
+                }
+            }
+        }
+      stage('Remove Old Image From Jenkins Agent Server'){
+          steps {
+              script {
+                  sh '''#!/bin/bash
+                      docker image ls --format '{{.Repository}}:{{.Tag}}' | grep "hrc-amd-sync-service-demo" | sort | xargs docker image rm || true
+                      docker image ls --format '{{.Repository}}:{{.Tag}}' | grep "167121004129.dkr.ecr.us-east-1.amazonaws.com/hrc-amd-sync-service-demo" | sort | xargs docker image rm || true
+                      docker builder prune -a -f
+                  '''    
+              }
+          }
+      }
+
+        stage('Change Docker File to DEMO Environment') {
+           steps {
+               script {
+                    //sh "sed -i 's/amd-sync-service-APP_Version.jar/kollect-${env.APP_VERSION}.jar/g' /opt/hrc-kollect/workspace/HRC-AMD-Sync-Service-DEMO/Dockerfile"
+                    sh "sed -i 's/APP_VERSION/${env.APP_VERSION}/g' /opt/hrc-kollect/workspace/HRC-AMD-Sync-Service-DEMO/Dockerfile"
+                    sh "sed -i 's/APP_ENV/demo/g' /opt/hrc-kollect/workspace/HRC-AMD-Sync-Service-DEMO/Dockerfile"
+               }
+           }
+        }
+
+        stage('Build Application & Create Image') {
+            steps {
+                sh "cd /opt/hrc-kollect/workspace/HRC-AMD-Sync-Service-DEMO/ && mvn clean install -DskipTests -Dspring.profiles.active=demo"
+                sh "cd /opt/hrc-kollect/workspace/HRC-AMD-Sync-Service-DEMO/ && docker build -t hrc-amd-sync-service-demo:${env.PIPELINE_ID} ."
+            }
+        }
+        stage('Image Push to ECR') {
+            steps {
+                script {
+                    sh '''#!/bin/bash
+                        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 167121004129.dkr.ecr.us-east-1.amazonaws.com
+                    '''    
+                }
+                sh "docker tag hrc-amd-sync-service-demo:${env.PIPELINE_ID} 167121004129.dkr.ecr.us-east-1.amazonaws.com/hrc-amd-sync-service-qa:${env.PIPELINE_ID}"
+                sh "docker image ls"
+                sh "docker push 167121004129.dkr.ecr.us-east-1.amazonaws.com/hrc-amd-sync-service-qa:${env.PIPELINE_ID}"
+            }
+        }
+stage('Cleanup Old Demo Container') {
+    steps {
+        script {
+            sshagent(['HRC-AMD-Kollect-Mediator-DEV']) {
+                sh """
+                    ssh -o StrictHostKeyChecking=no ubuntu@10.2.1.23 '
+                        docker rm -f hrc-amd-sync-service-demo || true
+
+                        docker image prune -f
+
+                        docker image ls --format "{{.Repository}}:{{.Tag}}" | \
+                        grep "167121004129.dkr.ecr.us-east-1.amazonaws.com/hrc-amd-sync-service-qa" | \
+                        grep -v "${env.PIPELINE_ID}" | \
+                        xargs -r docker image rm || true
+                    '
+                """
+            }
+        }
+    }
+}
+stage('Deploy AMD-Sync-Service in DEMO Server') {
+    steps {
+        script {
+            sshagent(['HRC-AMD-Kollect-Mediator-DEV']) {
+                sh """
+                    ssh -o StrictHostKeyChecking=no ubuntu@10.2.1.23 '
+                        aws ecr get-login-password --region us-east-1 | \
+                        docker login --username AWS --password-stdin \
+                        167121004129.dkr.ecr.us-east-1.amazonaws.com
+
+                        docker pull 167121004129.dkr.ecr.us-east-1.amazonaws.com/hrc-amd-sync-service-qa:${env.PIPELINE_ID}
+
+                        docker rm -f hrc-amd-sync-service-demo || true
+
+                        docker run -d \
+                            --restart unless-stopped \
+                            --name hrc-amd-sync-service-demo \
+                            -p 8182:8082 \
+                            167121004129.dkr.ecr.us-east-1.amazonaws.com/hrc-amd-sync-service-qa:${env.PIPELINE_ID}
+
+                        docker ps
+                    '
+                """
+            }
+        }
+    }
+}
+    }
+}

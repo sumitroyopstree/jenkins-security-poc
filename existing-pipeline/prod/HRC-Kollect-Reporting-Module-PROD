@@ -1,0 +1,127 @@
+pipeline {
+    agent { label 'HRC-Kollect-Jenkins-Agent'}
+ 
+    stages {
+        stage('Input GIT Branch') {
+            steps {
+                script {
+                    def branchName = input(
+                        id: 'branchInput',
+                        message: 'Please enter the Git branch name:',
+                        parameters: [
+                            string(
+                                name: 'BRANCH',
+                                defaultValue: '',
+                                description: 'Git branch name'
+                            )
+                        ]
+                    )
+                    currentBuild.description = "Building Git branch: ${branchName}"
+                    env.Branch_Name = branchName
+                }
+            }
+        }
+        stage('Checkout') {
+            steps{
+                script {
+                    def branchName = env.Branch_Name
+                    if (branchName) {
+                        if (branchName.startsWith("")) {
+                            git branch: branchName,
+                                changelog: false,
+                                credentialsId: 'hasantha-hrc-gitlab-access',
+                                poll: false,
+                                url: 'https://gitlab.healthreconconnect.com/hrc/kollect-report-service.git'
+                        } else {
+                            error "Invalid branch name. The branch must start with 'any'."
+                        }
+                    } else {
+                        error "Branch name is not provided. Please set the 'Branch_Name' environment variable."
+                    }
+                }
+            }
+        }
+        stage('Get App Version') {
+            steps {
+                script {
+                    def appVersion = sh(script: "cd /opt/hrc-kollect/workspace/HRC-Kollect-Reporting-Module-PROD/ && mvn help:evaluate -Dexpression=project.version -q -DforceStdout", returnStdout: true).trim()
+                    echo "App Version: ${appVersion}"
+                    env.APP_VERSION = appVersion
+                }
+            }
+        }
+        stage('Get Pipeline ID') {
+            steps {
+                script {
+                    def pipelineID = currentBuild.number
+                    echo "Pipeline ID: ${pipelineID}"
+                    env.PIPELINE_ID = pipelineID
+                }
+            }
+        }
+       stage('Remove Old Image From Jenkins Agent Server'){
+           steps {
+               script {
+                   sh '''#!/bin/bash
+                       docker image ls --format '{{.Repository}}:{{.Tag}}' | grep "kollect-reporting-module-prod" | sort | xargs docker image rm || true
+                       docker image ls --format '{{.Repository}}:{{.Tag}}' | grep "167121004129.dkr.ecr.us-east-1.amazonaws.com/kollect-reporting-module-prod" | sort | xargs docker image rm || true
+                       docker builder prune -a -f
+                   '''   
+               }
+           }
+       }
+ 
+        stage('Change Docker File to Production Environment') {
+           steps {
+               script {
+                    //sh "sed -i 's/amd-sync-service-APP_Version.jar/kollect-${env.APP_VERSION}.jar/g' /opt/hrc-kollect/workspace/HRC-Kollect-Reporting-Module-QA/Dockerfile"
+                    sh "sed -i 's/APP_VERSION/${env.APP_VERSION}/g' /opt/hrc-kollect/workspace/HRC-Kollect-Reporting-Module-PROD/Dockerfile"
+                    sh "sed -i 's/APP_ENV/prod/g' /opt/hrc-kollect/workspace/HRC-Kollect-Reporting-Module-PROD/Dockerfile"
+               }
+           }
+        }
+ 
+        stage('Build Application & Create Image') {
+            steps {
+                sh "cd /opt/hrc-kollect/workspace/HRC-Kollect-Reporting-Module-PROD/ && mvn clean install -DskipTests -Dspring.profiles.active=prod -Dmanagement.metrics.binders.system.enabled=false -Djdk.attach.allowAttachSelf=true"
+                sh "cd /opt/hrc-kollect/workspace/HRC-Kollect-Reporting-Module-PROD/ && docker build -t kollect-reporting-module-prod:${env.PIPELINE_ID} ."
+            }
+        }
+        stage('Image Push to ECR') {
+            steps {
+                script {
+                    sh '''#!/bin/bash
+                        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 167121004129.dkr.ecr.us-east-1.amazonaws.com
+                    '''   
+                }
+                sh "docker tag kollect-reporting-module-prod:${env.PIPELINE_ID} 167121004129.dkr.ecr.us-east-1.amazonaws.com/kollect-reporting-module-prod:${env.PIPELINE_ID}"
+                sh "docker image ls"
+                sh "docker push 167121004129.dkr.ecr.us-east-1.amazonaws.com/kollect-reporting-module-prod:${env.PIPELINE_ID}"
+            }
+        }
+        stage('Remove Old Kollect-Reporting-Module Images From PROD Server') {
+           steps {
+              script {
+                   sshagent(['HRC-Kollect-PROD-Server']) {
+                       sh """#!/bin/bash
+                          ssh -i HRC-Kollect-PROD-BE.pem ubuntu@10.2.10.118 \\
+                               'docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "167121004129.dkr.ecr.us-east-1.amazonaws.com/kollect-reporting-module-prod" | sort | xargs docker image rm || true ; docker stop kollect-reporting-module-prod || true && docker rm kollect-reporting-module-prod || true'
+                       """
+                   }
+               }
+           }
+        }
+        stage('Deploy Kollect-Reporting-Module in PROD Server') {
+           steps {
+               script {
+                   sshagent(['HRC-Kollect-PROD-Server']) {
+                       sh """#!/bin/bash
+                           ssh -i HRC-Kollect-PROD-BE.pem ubuntu@10.2.10.118 \\
+                               'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 167121004129.dkr.ecr.us-east-1.amazonaws.com && docker run -d -p 8080:8080 --memory=8g  --cpus=4  -e JAVA_TOOL_OPTIONS="-XX:-UseContainerSupport" --name kollect-reporting-module-prod 167121004129.dkr.ecr.us-east-1.amazonaws.com/kollect-reporting-module-prod:${env.PIPELINE_ID}'
+                       """
+                   }
+               }
+           }
+        }
+    }
+}

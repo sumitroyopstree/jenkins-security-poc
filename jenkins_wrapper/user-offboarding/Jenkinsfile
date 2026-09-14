@@ -1,0 +1,97 @@
+@Library('jenkins-shared-libraries@feature-cicd') _
+
+pipeline {
+    agent any
+
+    parameters {
+        choice(name: 'MODE', choices: ['single', 'bulk'], description: 'Offboarding mode — single user or bulk (CSV)')
+        string(name: 'USERNAME', defaultValue: '', description: 'Username to delete (only for single mode)')
+        string(name: 'CSV_PATH', defaultValue: 'resources/user-onboarding/users.csv', description: 'Path to users CSV file (for bulk mode)')
+        string(name: 'ADMIN_CRED_ID', defaultValue: 'JENKINS_ADMIN_CREDS', description: 'Jenkins credential ID for admin username/password')
+    }
+
+    stages {
+        stage('Validate Input') {
+            steps {
+                script {
+                    if (params.MODE == 'single') {
+                        if (!params.USERNAME?.trim()) {
+                            error("USERNAME is required in single offboarding mode")
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Run User Offboarding') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: params.ADMIN_CRED_ID,
+                    usernameVariable: 'ADMIN_USER',
+                    passwordVariable: 'ADMIN_TOKEN'
+                )]) {
+                    script {
+                        def jenkinsUrl = env.JENKINS_URL ?: "http://localhost:8080/"
+                        env.MODE       = 'delete'
+                        env.USERNAME   = (params.MODE == 'single') ? params.USERNAME.trim() : ''
+                        env.CSV_PATH   = params.CSV_PATH
+
+                        echo "JENKINS_URL = ${jenkinsUrl}"
+                        echo "MODE = ${env.MODE}"
+                        echo "USERNAME = ${env.USERNAME}"
+                        echo "CSV_PATH = ${env.CSV_PATH}"
+
+                        sh """
+                            export JENKINS_URL="${jenkinsUrl}"
+                            python3 resources/user-onboarding/user-onboarding.py
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Send Notifications') {
+            steps {
+                script {
+                    if (!fileExists('deleted_users.txt')) {
+                        echo "ℹ️ No deleted_users.txt file found — skipping notifications"
+                        return
+                    }
+
+                    def deletedContent = readFile('deleted_users.txt').trim()
+                    if (!deletedContent) {
+                        echo "ℹ️ No users deleted — skipping notifications"
+                        return
+                    }
+
+                    def deletedLines = deletedContent.split('\n')
+                    def deletedCount = deletedLines.length
+                    def deletedListForChat = deletedLines.collect { "• *${it.trim()}*" }.join('\\n')
+
+                    def triggeredBy = 'Unknown'
+                    try { triggeredBy = currentBuild.getBuildCauses()[0]?.userId ?: 'Unknown' } catch (e) {}
+
+                    def gchatDeletePayload = """{"cards":[{"header":{"title":"User Offboarding Complete","subtitle":"Jenkins User Management","imageUrl":"https://www.jenkins.io/images/logos/jenkins/jenkins.png","imageStyle":"AVATAR"},"sections":[{"widgets":[{"keyValue":{"topLabel":"Users Deleted","content":"${deletedCount}"}},{"keyValue":{"topLabel":"Triggered By","content":"${triggeredBy}"}},{"keyValue":{"topLabel":"Build","content":"#${env.BUILD_NUMBER}"}}]},{"header":"Deleted Users","widgets":[{"textParagraph":{"text":"${deletedListForChat}"}}]},{"widgets":[{"buttons":[{"textButton":{"text":"View Build","onClick":{"openLink":{"url":"${env.BUILD_URL}"}}}}]}]}]}]}"""
+
+                    withCredentials([string(credentialsId: 'GCHAT_JENKINS_WEBHOOK', variable: 'GCHAT_WEBHOOK_URL')]) {
+                        sh """
+                            curl -s -X POST -H 'Content-Type: application/json' \
+                                -d '${gchatDeletePayload}' \
+                                "\${GCHAT_WEBHOOK_URL}"
+                        """
+                    }
+                    echo "Google Chat delete notification sent"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ User offboarding completed successfully"
+        }
+        failure {
+            echo "❌ User offboarding failed"
+        }
+    }
+}

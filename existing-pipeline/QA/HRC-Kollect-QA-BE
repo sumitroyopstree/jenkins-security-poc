@@ -1,0 +1,193 @@
+pipeline {
+    agent { label 'HRC-Kollect-Jenkins-Agent' }
+
+    environment {
+        // environment variables
+        PROJECT = 'hrc-kollect-qa-backend'
+    }
+    stages {
+        stage('Input GIT Branch') {
+            steps {
+                script {
+                    def branchName = input(
+                        id: 'branchInput',
+                        message: 'Please enter the Git branch name:',
+                        parameters: [
+                            string(
+                                name: 'BRANCH',
+                                defaultValue: '',
+                                description: 'Git branch name'
+                            )
+                        ]
+                    )
+                    currentBuild.description = "Building Git branch: ${branchName}"
+                    env.BRANCH_NAME = branchName
+                }
+            }
+        }
+        stage('Checkout') {
+            steps {
+                script {
+                    def branchName = env.BRANCH_NAME
+                    if (branchName) {
+                        if (branchName.startsWith("")) {
+                            git branch: branchName,
+                                changelog: false,
+                                credentialsId: 'hasantha-hrc-gitlab-access',
+                                poll: false,
+                                url: 'https://gitlab.healthreconconnect.com/hrc/kollect-core-service.git'
+                        } else {
+                            error "Invalid branch name. The branch must start with ''."
+                        }
+                    } else {
+                        error "Branch name is not provided. Please set the 'BRANCH_NAME' environment variable."
+                    }
+                }
+            }
+        }
+        stage('Get Pipeline ID') {
+            steps {
+                script {
+                    def pipelineID = currentBuild.number
+                    echo "Pipeline ID: ${pipelineID}"
+                    env.PIPELINE_ID = pipelineID.toString()
+                }
+            }
+        }
+        // stage('Sonar Analysis') {
+        //     environment {
+        //         scannerHome = tool "kn_sonarcube"
+        //         nodeJSHome = tool name: 'NodeJS'
+        //         PATH = "${nodeJSHome}/bin:${env.PATH}"
+        //     }
+        //     steps {
+        //         withSonarQubeEnv("kn_sonarcube") {
+        //             sh '''
+        //                 ${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=${PROJECT} \
+        //                 -Dsonar.projectName=${PROJECT} \
+        //                 -Dsonar.projectVersion=1.0 \
+        //                 -Dsonar.sources=. \
+        //                 -Dsonar.language=js \
+        //                 -Dsonar.exclusions=node_modules/**,build/** \
+        //                 -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+        //                 -Dsonar.typescript.tsconfigPath=tsconfig.json
+        //             '''
+        //         }
+        //     }
+        // }
+        stage('Remove Old data - App') {
+            steps {
+                script {
+                    sshagent(['HRC-Kollect-QA-Server']) {
+                        sh """#!/bin/bash
+                            ssh -o StrictHostKeyChecking=no ubuntu@10.2.10.111 \\
+                            'cd /opt/hrc-kollect-qa/backend && pwd && mkdir -p logs dist && sudo chown -R ubuntu:ubuntu logs dist && rm -rf ./* && rm -rf ./.env'
+                        """
+                    }
+                }
+            }
+        }       
+        stage('Copy Changes to Server - App') {
+            steps {
+                sh '''#!/bin/bash
+                cd ${WORKSPACE}
+                tar -czf server.tar.gz .[!.]* *
+                # SCP server directory
+                scp -i /opt/qa-keys/HRC-Kollect-QA-New-Server.pem ./server.tar.gz ubuntu@10.2.10.111:/opt/hrc-kollect-qa/backend
+                '''
+            }
+        }
+        stage('Create .env - App') {
+            steps {
+                script {
+                    sshagent(['HRC-Kollect-QA-Server']) {
+                        sh """#!/bin/bash
+                            ssh -o StrictHostKeyChecking=no ubuntu@10.2.10.111 \\
+                            'cd /opt/hrc-kollect-qa/backend && pwd && touch .env && echo 'NODE_ENV=production' >> .env && echo 'SECRET_KEY_MANAGER_KEY=arn:aws:secretsmanager:us-east-1:167121004129:secret:qa-hrckollect-com-0mHt87' >> .env && echo 'SECRET_KEY_MANAGER_REGION=us-east-1' >> .env'
+                        """
+                    }
+                }
+            }
+        }
+        stage('Remove Old service - App') {
+            steps {
+                script {
+                    sshagent(['HRC-Kollect-QA-Server']) {
+                        def serviceRunning = sh (
+                        script: """#!/bin/bash
+                        ssh -o StrictHostKeyChecking=no ubuntu@10.2.10.111 \\
+                        'source /home/ubuntu/.nvm/nvm.sh && nvm use v24.6.0 && pm2 list | grep -q "hrc-kollect-qa-backend"'
+                        """,
+                    returnStatus: true
+                    )
+
+                if (serviceRunning == 0) {
+                    echo "Service is running, deleting..."
+                    sh """#!/bin/bash
+                        ssh -o StrictHostKeyChecking=no ubuntu@10.2.10.111 \\
+                        'source /home/ubuntu/.nvm/nvm.sh && nvm use v24.6.0 && node -v && cd /opt/hrc-kollect-qa/backend && pwd && pm2 delete hrc-kollect-qa-backend'
+                    """
+                        } else {
+                            echo "Service is not running, skipping removal."
+                        }
+                    }
+                }
+            }
+        }
+        stage('Build Backend - App') {
+            steps {
+                script {
+                    sshagent(['HRC-Kollect-QA-Server']) {
+                        sh """#!/bin/bash
+                            ssh -o StrictHostKeyChecking=no ubuntu@10.2.10.111 \\
+                            'source /home/ubuntu/.nvm/nvm.sh && nvm use v24.6.0 && node -v && cd /opt/hrc-kollect-qa/backend && pwd && mkdir -p logs dist && sudo chown -R ubuntu:ubuntu logs dist && ls -ltr && tar -xzvf server.tar.gz && yarn && pm2 start "yarn start" --name hrc-kollect-qa-backend && yarn sequelize db:migrate'
+                        """
+                    }
+                }
+            }
+        }
+//     post {
+//         always {
+//             script {
+//                 sh 'pwd'
+//                 def jobName = env.JOB_NAME
+//                 def buildNumber = env.BUILD_NUMBER
+//                 def pipelineStatus = currentBuild.result ?: 'UNKNOWN'
+//                 def bannerColor = pipelineStatus.toUpperCase() == 'SUCCESS' ? 'green' : 'red'
+//                 def sonarQubeLink = "https://sonarqube.kernernorland.com/dashboard?id=${PROJECT}"
+
+//                 def body = """<html>
+//                 <body>
+//                     <div style="border: 4px solid ${bannerColor}; padding: 10px;">
+//                         <h2>${jobName} - Build ${buildNumber}</h2>
+//                         <div style="background-color: ${bannerColor}; padding: 10px;">
+//                             <h3 style="color: white;">Pipeline Status: ${pipelineStatus.toUpperCase()}</h3>
+//                         </div>
+//                     </div>
+//                     <p>Check the <a href="${BUILD_URL}">console output</a>.</p>
+//                     <p>View the <a href="${sonarQubeLink}">SonarQube Report</a>.</p>
+//                 </body>
+//                 </html>"""
+
+//                 // Write the body content to a file
+//                 writeFile file: 'email_body.html', text: body
+
+//                 emailext (
+//                     subject: "${jobName} - Build ${buildNumber} - ${pipelineStatus.toUpperCase()}",
+//                     body: body,
+//                     //to: 'kndevops@kernernorland.com,iconnhrm-dev@kernernorland.com',
+//                     from: 'smtp@kernernorland.com',
+//                     replyTo: 'jenkins@kernernorland.com',
+//                     mimeType: 'text/html',
+//                     // attachmentsPattern: 'reports/*.html'
+//                 )
+//             }
+//         }
+//         // cleanup {
+//         //     script {
+//         //         // Clean up the workspace and any other directories used in the pipeline
+//         //         sh 'rm -rf ${WORKSPACE}/*'
+//         //     }
+//         // }
+    }
+}
