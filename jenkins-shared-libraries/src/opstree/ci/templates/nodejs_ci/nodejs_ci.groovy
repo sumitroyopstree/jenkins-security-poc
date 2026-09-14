@@ -331,7 +331,7 @@ def call(Map step_params) {
         trivy                = new docker_image_scanning()
         image_size_validator = new image_size_validator()
         notify               = new notify()
-        build                = new node_build() // Delegated to opstree.common.node_build
+        build                = new npm_build_artifact()
         unittest             = new junit()
         dockerhub            = new dockerhub_publish()
 
