@@ -215,7 +215,7 @@ fi
                         deployScript += """
 echo "${base64CustomEnv}" | base64 -d > .env
 """
-                    } 
+                    }
                     // Priority 2: AWS Secrets Manager
                     else if (secret_arn) {
                         deployScript += """
@@ -441,7 +441,7 @@ done
 """ : """
 echo "Verifying health on ${health_check_endpoint}..."
 for i in \$(seq 1 15); do
-    HTTP_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" "${health_check_endpoint}" || true)
+    HTTP_STATUS=\$(curl -s -o /dev/null -w '%{http_code}' '${health_check_endpoint}' || true)
     echo "Check \$i/15: Endpoint HTTP Status = \$HTTP_STATUS"
 
     if [ "\$HTTP_STATUS" != "000" ] && [ -n "\$HTTP_STATUS" ]; then
@@ -469,7 +469,7 @@ else
         DETECTED_PORT=\$(sudo ss -tulpn 2>/dev/null | grep "pid=\${APP_PID}" | awk '{print \$5}' | awk -F: '{print \$NF}' | head -n 1)
         if [ -n "\$DETECTED_PORT" ]; then
             echo "[INFO] Health check on ${health_check_endpoint} returned \$HTTP_STATUS, but process (PID \$APP_PID) is listening on port \${DETECTED_PORT}!"
-            FALLBACK_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:\${DETECTED_PORT}/" || true)
+            FALLBACK_STATUS=\$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:\${DETECTED_PORT}/" || true)
             if [ "\$FALLBACK_STATUS" != "000" ] && [ -n "\$FALLBACK_STATUS" ]; then
                 echo "=========================================================="
                 echo "SUCCESS: Service is running and reachable on port \${DETECTED_PORT} (HTTP \$FALLBACK_STATUS)."
