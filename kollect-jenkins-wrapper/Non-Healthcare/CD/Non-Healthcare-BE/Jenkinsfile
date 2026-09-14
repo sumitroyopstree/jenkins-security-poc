@@ -1,4 +1,4 @@
-@Library('jenkins-security-poc-library@51e4d5372e418f138f4eecba028c51b3e51f33a2') _
+@Library('jenkins-security-poc-library@b664b2efc50de2621053e10f1450402b337bd05a') _
 
 def cdpipeline = new opstree.cd.templates.ssh_pm2.ssh_pm2_deployment()
 def targetEnv = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
