@@ -1,6 +1,6 @@
 package opstree.nodejs
 
-import opstree.common.parser
+import opstree.common.*
 
 /**
  * Packages npm applications without the shared node_build helper's host sudo/cache setup.
