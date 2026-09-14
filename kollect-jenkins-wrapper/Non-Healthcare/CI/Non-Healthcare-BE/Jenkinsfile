@@ -1,4 +1,4 @@
-@Library('jenkins-shared-libraries@feature-cicd') _
+@Library('jenkins-security-poc-library@jenkins-security-poc-local') _
 
 def cipipeline = new opstree.ci.templates.nodejs_ci.nodejs_ci()
 def targetEnv = (params.ENVIRONMENT ?: 'TEST').toUpperCase()
