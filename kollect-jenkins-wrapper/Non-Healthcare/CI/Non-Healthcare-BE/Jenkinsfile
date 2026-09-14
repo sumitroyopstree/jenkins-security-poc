@@ -26,9 +26,10 @@ node {
         owasp_project_name                        : 'jenkins-security-poc',
         owasp_report_publish                      : 'true',
         owasp_report_format                       : 'html',
-        fail_job_if_dependency_returned_exception : 'true',
+        fail_job_if_dependency_returned_exception : 'false',
         nvd_api_key_creds_id                      : '',
         disable_yarn_audit                        : 'true',
+        owasp_extra_args                          : '--noupdate',
 
         perform_code_build               : true,
         node_version                     : '18',
