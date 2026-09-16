@@ -1,0 +1,48 @@
+@Library('jenkins-shared-libraries@main') _
+
+def cdpipeline = new opstree.cd.templates.ssh_pm2.ssh_pm2_deployment()
+
+node {
+    currentBuild.description = "CD: salary-api | Image: ${params.DOCKER_IMAGE ?: 'royopstree/salary-api'}:${params.DOCKER_TAG}"
+
+    cdpipeline.call([
+        enable_jenkins_build_param_override: true,
+
+        // =========================================================
+        // Deployment Mode
+        // =========================================================
+        deployment_mode                   : 'docker',
+
+        // =========================================================
+        // Docker Image
+        // =========================================================
+        docker_image                      : params.DOCKER_IMAGE ?: 'royopstree/salary-api',
+        docker_tag                        : params.DOCKER_TAG,
+        docker_container_name             : 'salary-api',
+
+        // =========================================================
+        // Container Networking
+        // =========================================================
+        docker_host_port                  : 8080,
+        docker_container_port             : 8080,
+        docker_restart_policy             : 'unless-stopped',
+        docker_run_args                   : '',
+
+        // =========================================================
+        // AWS VM / SSH
+        // =========================================================
+        server_ip                         : '54.91.86.168',
+        ssh_user                          : 'ubuntu',
+        ssh_credentials_id                : 'aws-vm-ssh-key',
+
+        // =========================================================
+        // Application Health Check
+        // =========================================================
+        health_check_endpoint             : 'http://localhost:8080/actuator/health',
+
+        // =========================================================
+        // Notifications
+        // =========================================================
+        notification_enabled              : false
+    ])
+}
