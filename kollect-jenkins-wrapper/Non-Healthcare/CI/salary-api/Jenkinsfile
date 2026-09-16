@@ -1,0 +1,90 @@
+@Library('jenkins-shared-libraries@main') _
+
+def cipipeline = new opstree.ci.templates.java_ci.java_ci()
+
+node {
+    currentBuild.description = "CI: salary-api | Branch: ${params.BRANCH ?: 'main'}"
+
+    cipipeline.call([
+        enable_jenkins_build_param_override: true,
+        clean_workspace                  : true,
+
+        // =========================================================
+        // Git / Application Repository
+        // =========================================================
+        repo_https_url                   : 'https://github.com/sumitroyopstree/salary-api.git',
+        repo_branch                      : params.BRANCH ?: 'main',
+        repo_url_type                    : 'http',
+        jenkins_git_creds_id             : 'github-jenkins-security-poc',
+        source_code_path                 : '',
+
+        // =========================================================
+        // Gitleaks
+        // =========================================================
+        gitleaks_check                   : true,
+        fail_job_if_leak_detected        : false,
+        gitleaks_scan_mode               : 'full',
+        gitleaks_report_jenkins_publish  : true,
+
+        // =========================================================
+        // OWASP Dependency Check
+        // =========================================================
+        dependency_check                          : 'true',
+        dependency_scan_tool                      : 'owasp',
+        owasp_project_name                        : 'salary-api',
+        owasp_report_publish                      : 'true',
+        owasp_report_format                       : 'html',
+        fail_job_if_dependency_returned_exception : 'false',
+        nvd_api_key_creds_id                      : '',
+        disable_yarn_audit                        : 'true',
+
+        // =========================================================
+        // Java / Maven Build
+        // =========================================================
+        app_stack                         : 'java',
+        perform_code_build                : true,
+        build_tool                        : 'maven',
+        withmaven_globaltool_jdk           : 'Java 17',
+        withmaven_globaltool_maven         : 'Maven 3.9',
+        java_version                      : '17',
+        pom_location                      : '',
+
+        // =========================================================
+        // Unit Testing
+        // =========================================================
+        unit_testing_check               : true,
+        fail_job_if_unit_issue_detected  : false,
+        unit_test_reports_path           : '**/target/surefire-reports/*.xml',
+
+        // =========================================================
+        // Static Code Analysis
+        // =========================================================
+        static_code_analysis_check          : false,
+
+        // =========================================================
+        // Docker Build
+        // =========================================================
+        perform_build_dockerfile         : true,
+        image_name                       : 'salary-api',
+        dockerfile_location              : 'Dockerfile',
+        dockerfile_context               : '.',
+
+        // =========================================================
+        // DockerHub Publish
+        // =========================================================
+        artifact_publish_check           : true,
+        artifact_destination_type        : 'dockerhub',
+        dockerhub_credentials_id         : 'dockerhub-jenkins-security-poc',
+        dockerhub_username               : 'royopstree',
+
+        // =========================================================
+        // CD Trigger
+        // =========================================================
+        enable_trigger_cd_pipeline       : false,
+
+        // =========================================================
+        // Notifications
+        // =========================================================
+        notification_enabled             : false
+    ])
+}
