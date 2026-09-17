@@ -7,28 +7,19 @@ node {
 
     cipipeline.call([
         enable_jenkins_build_param_override: true,
-        clean_workspace                  : true,
+        clean_workspace                  : false,
 
-        // =========================================================
-        // Git / Application Repository
-        // =========================================================
         repo_https_url                   : 'https://github.com/sumitroyopstree/salary-api.git',
         repo_branch                      : params.BRANCH ?: 'main',
         repo_url_type                    : 'http',
         jenkins_git_creds_id             : 'github-jenkins-security-poc',
         source_code_path                 : '',
 
-        // =========================================================
-        // Gitleaks
-        // =========================================================
         gitleaks_check                   : true,
         fail_job_if_leak_detected        : false,
         gitleaks_scan_mode               : 'full',
         gitleaks_report_jenkins_publish  : true,
 
-        // =========================================================
-        // OWASP Dependency Check
-        // =========================================================
         dependency_check                          : 'true',
         dependency_scan_tool                      : 'owasp',
         owasp_project_name                        : 'salary-api',
@@ -38,53 +29,65 @@ node {
         nvd_api_key_creds_id                      : '',
         disable_yarn_audit                        : 'true',
 
-        // =========================================================
-        // Java / Maven Build
-        // =========================================================
-        app_stack                         : 'java',
-        perform_code_build                : true,
-        build_tool                        : 'maven',
-        withmaven_globaltool_jdk           : 'Java 17',
-        withmaven_globaltool_maven         : 'Maven 3.9',
-        java_version                      : '17',
-        pom_location                      : '',
+        app_stack                  : 'java',
+        perform_code_build         : true,
+        build_tool                 : 'maven',
+        withmaven_globaltool_jdk    : 'Java 17',
+        withmaven_globaltool_maven  : 'Maven 3.9',
+        java_version               : '17',
+        pom_location               : '',
 
-        // =========================================================
-        // Unit Testing
-        // =========================================================
-        unit_testing_check               : true,
-        fail_job_if_unit_issue_detected  : false,
-        unit_test_reports_path           : '**/target/surefire-reports/*.xml',
+        unit_testing_check              : true,
+        fail_job_if_unit_issue_detected : false,
+        unit_test_reports_path          : '**/target/surefire-reports/*.xml',
 
-        // =========================================================
-        // Static Code Analysis
-        // =========================================================
-        static_code_analysis_check          : false,
+        static_code_analysis_check : false,
 
-        // =========================================================
-        // Docker Build
-        // =========================================================
-        perform_build_dockerfile         : true,
-        image_name                       : 'salary-api',
-        dockerfile_location              : 'Dockerfile',
-        dockerfile_context               : '.',
+        perform_build_dockerfile : true,
+        image_name               : 'royopstree/salary-api',
+        dockerfile_location      : 'Dockerfile',
+        dockerfile_context       : '.',
 
-        // =========================================================
-        // DockerHub Publish
-        // =========================================================
-        artifact_publish_check           : true,
-        artifact_destination_type        : 'dockerhub',
-        dockerhub_credentials_id         : 'dockerhub-jenkins-security-poc',
-        dockerhub_username               : 'royopstree',
+        // Disable the generic publisher because the current Java
+        // shared-library publisher does not actively handle DockerHub.
+        artifact_publish_check : false,
 
-        // =========================================================
-        // CD Trigger
-        // =========================================================
-        enable_trigger_cd_pipeline       : false,
-
-        // =========================================================
-        // Notifications
-        // =========================================================
-        notification_enabled             : false
+        enable_trigger_cd_pipeline : false,
+        notification_enabled       : false
     ])
+
+    stage('Publish Docker Image to DockerHub') {
+        def imageTag = sh(
+            script: "cd salary-api && git rev-parse --short HEAD",
+            returnStdout: true
+        ).trim()
+
+        withCredentials([
+            usernamePassword(
+                credentialsId: 'dockerhub-jenkins-security-poc',
+                usernameVariable: 'DOCKERHUB_USER',
+                passwordVariable: 'DOCKERHUB_TOKEN'
+            )
+        ]) {
+            sh """
+                set -e
+
+                echo "Publishing Docker image: royopstree/salary-api:${imageTag}"
+
+                printf '%s' "\$DOCKERHUB_TOKEN" | \
+                    docker login \
+                    --username "\$DOCKERHUB_USER" \
+                    --password-stdin
+
+                docker push royopstree/salary-api:${imageTag}
+
+                docker logout >/dev/null 2>&1 || true
+
+                echo "Docker image published successfully:"
+                echo "royopstree/salary-api:${imageTag}"
+            """
+        }
+    }
+
+    deleteDir()
 }
